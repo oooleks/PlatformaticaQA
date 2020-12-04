@@ -18,7 +18,7 @@ public class SimpleTest {
 
         Assert.assertEquals(name.getText(), "PlatformaticaQA");
 
-        Thread.sleep(2000);
+        Thread.sleep(1000);
         browser.close();
     }
 }
