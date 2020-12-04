@@ -13,12 +13,12 @@ public class SimpleTest {
         System.setProperty("webdriver.chrome.driver", "C:/Driver/chromedriver.exe");
 
         WebDriver browser = new ChromeDriver();
-        browser.get("https://github.com/SergeiDemyanenko/PlatformaticaQA");
+        browser.get("https://github.com/oooleks/PlatformaticaQA");
         WebElement name = browser.findElement(By.xpath("//strong/a"));
 
         Assert.assertEquals(name.getText(), "PlatformaticaQA");
 
         Thread.sleep(1000);
-        browser.close();
+        browser.quit();
     }
 }
