@@ -15,8 +15,10 @@ import java.net.URL;
 
 public abstract class BaseTest {
 
+    // Selenium Grid
     public static final String HUB_URL = "http://localhost:4444/wd/hub";
 
+    // check if remote driver is running on 4444 port
     private static boolean remoteWebDriver = false;
     static {
         try {
@@ -24,10 +26,13 @@ public abstract class BaseTest {
             try {
                 con.setRequestMethod("GET");
                 remoteWebDriver = con.getResponseCode() == HttpURLConnection.HTTP_OK;
+                // finally section will always execute -> disconnect connection
             } finally {
                 con.disconnect();
             }
-        } catch (IOException ignore) {}
+        } catch (IOException ignore) {
+            // code if error occurs
+        }
 
         if (!remoteWebDriver) {
             WebDriverManager.chromedriver().setup();
