@@ -12,11 +12,9 @@ public class SimpleTest extends BaseTest {
 
         WebDriver browser = getDriver();
         browser.get("https://github.com/SergeiDemyanenko/PlatformaticaQA");
+
         WebElement name = browser.findElement(By.xpath("//strong/a"));
-
         Assert.assertEquals(name.getText(), "PlatformaticaQA");
-
-        Thread.sleep(3000);
     }
 
     @Test
@@ -40,12 +38,10 @@ public class SimpleTest extends BaseTest {
 
         WebElement button = driver.findElement(By.id("branch-select-menu"));
         button.click();
-
         Thread.sleep(2000);
 
         WebElement link = driver.findElement(By.xpath("//footer/a[contains(text(), 'branches')]"));
         link.click();
-
         Assert.assertEquals(driver.getCurrentUrl(), "https://github.com/SergeiDemyanenko/PlatformaticaQA/branches");
     }
 
@@ -55,8 +51,6 @@ public class SimpleTest extends BaseTest {
         driver.get("https://github.com/SergeiDemyanenko/PlatformaticaQA");
 
         WebElement footer_1 = driver.findElement(By.xpath("/html[1]/body[1]/div[5]/div[1]/ul[1]/li[1]"));
-
         Assert.assertEquals(footer_1.getText(), "© 2020 GitHub, Inc.");
     }
-
 }
