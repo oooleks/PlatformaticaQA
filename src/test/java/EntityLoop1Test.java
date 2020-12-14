@@ -13,7 +13,7 @@ public class EntityLoop1Test extends BaseTest {
         return new WebDriverWait(getDriver(), timeoutSecond);
     }
 
-    private void actionForLastRecord (WebDriver driver) throws InterruptedException {
+    private void actionForLastRecord(WebDriver driver) throws InterruptedException {
         List<WebElement> record_rows_we = driver.findElements(By.cssSelector("tbody > tr"));
         if (record_rows_we.size() == 0) {
             Assert.fail("No \"Loop 1\" entity records found after creating one record");
@@ -49,7 +49,57 @@ public class EntityLoop1Test extends BaseTest {
             System.out.println("F1: " + f1_element.getAttribute("value"));
             if (Integer.parseInt(f1_element.getAttribute("value")) >= 10) { // 10 or more (change to ".equals("1000")
                 loop_go = false;
-                Thread.sleep(3000);
+                Thread.sleep(1000); // wait more time to loop to finish
+            }
+        }
+    }
+
+    private void assertLoopValues(WebDriver driver, int value, String mode) {
+        if (mode.equals("view")) {
+            String f1 = driver.findElement
+                    (By.xpath("//label[(text()='F1')]/following-sibling::div/child::div/child::span")).getText();
+            // Debug - to delete
+            System.out.println(f1);
+//            Assert.assertEquals("value", f1);
+
+            String f2 = driver.findElement
+                    (By.xpath("//label[(text()='F2')]/following-sibling::div/child::div/child::span")).getText();
+            // Debug - to delete
+            System.out.println(f2);
+            value += 1;
+//            Assert.assertEquals("value", f2);
+
+            String f3 = driver.findElement
+                    (By.xpath("//label[(text()='F3')]/following-sibling::div/child::div/child::span")).getText();
+            // Debug - to delete
+            System.out.println(f3);
+            value += 1;
+//            Assert.assertEquals("value", f3);
+            driver.navigate().back();
+        } else {
+            if (mode.equals("edit")) {
+                String f1 = driver.findElement
+                        (By.xpath("//div[@id='_field_container-f1']/child::span/child::input")).getAttribute("value");
+                // Debug - to delete
+                System.out.println("Edit F1: " + f1);
+//                Assert.assertEquals("value", f1);
+
+                String f2 = driver.findElement
+                        (By.xpath("//div[@id='_field_container-f2']/child::span/child::input")).getAttribute("value");
+                // Debug - to delete
+                System.out.println("Edit F2: " + f2);
+                value += 1;
+//                Assert.assertEquals("value", f2);
+
+                String f3 = driver.findElement
+                        (By.xpath("//div[@id='_field_container-f3']/child::span/child::input")).getAttribute("value");
+                // Debug - to delete
+                System.out.println("Edit F3: " + f3);
+                value += 1;
+//                Assert.assertEquals("value", f3);
+                ProjectUtils.click(driver, driver.findElement(By.xpath("//button[text()='Cancel']/parent::a")));
+            } else {
+                Assert.fail("Wrong mode provided to assert loop values (view or edit");
             }
         }
     }
@@ -74,7 +124,7 @@ public class EntityLoop1Test extends BaseTest {
         // Create Loop with F1 = 1
         WebElement new_loop = driver.findElement(By.xpath("//i[text()='create_new_folder']"));
         new_loop.click();
-        WebElement f1_element = driver.findElement(By.id("f1"));
+        WebElement f1_element = driver.findElement(By.xpath("//div[@id='_field_container-f1']/child::span/child::input"));
         f1_element.sendKeys(String.valueOf(number_1));
 
         waitUntilStop(driver, f1_element);
@@ -83,52 +133,44 @@ public class EntityLoop1Test extends BaseTest {
         System.out.println("Loop stopped and F1 = " + f1_element.getAttribute("value"));
 //        Assert.assertEquals("1000", f1_element.getAttribute("value"));
 
-        WebElement save_button = driver.findElement(By.id("pa-entity-form-save-btn"));
+        WebElement save_button = driver.findElement(By.xpath("//button[@id='pa-entity-form-save-btn']"));
         save_button.click();
-        Thread.sleep(2000);
+        Thread.sleep(1000);
 
         // 7. Open the record in view mode
         actionForLastRecord(driver);
         driver.findElement(By.linkText("view")).click();
-        Thread.sleep(1000);
+        Thread.sleep(500);
 
-        String f1 = driver.findElement
-                (By.xpath("//label[(text()='F1')]/following-sibling::div/child::div/child::span")).getText();
-        // Debug - to delete
-        System.out.println(f1);
-//        Assert.assertEquals("1000", f1);
+        assertLoopValues(driver, 1000, "view");
 
-        String f2 = driver.findElement
-                (By.xpath("//label[(text()='F2')]/following-sibling::div/child::div/child::span")).getText();
-        // Debug - to delete
-        System.out.println(f2);
-//        Assert.assertEquals("1001", f2);
-
-        String f3 = driver.findElement
-                (By.xpath("//label[(text()='F3')]/following-sibling::div/child::div/child::span")).getText();
-        // Debug - to delete
-        System.out.println(f3);
-//        Assert.assertEquals("1002", f3);
-        driver.navigate().back();
-//        ProjectUtils.click(driver, loop_1);
-
-        // 9. Open the record in Edit mode
+        // 9. Open the record in Edit mode and start F1 from 0
         actionForLastRecord(driver);
         driver.findElement(By.linkText("edit")).click();
-        Thread.sleep(1000);
-        f1_element.clear();
-        f1_element.sendKeys(String.valueOf(number_2));
-        waitUntilStop(driver, f1_element);
+        Thread.sleep(500);
+        WebElement f1_edit = driver.findElement(By.xpath("//div[@id='_field_container-f1']/child::span/child::input"));
+        f1_edit.clear();
+        f1_edit.sendKeys(String.valueOf(number_2));
+        waitUntilStop(driver, f1_edit);
+        driver.findElement(By.xpath("//button[@id='pa-entity-form-save-btn']")).click();
+        Thread.sleep(2000);
 
-        save_button.click();
+        actionForLastRecord(driver);
+        driver.findElement(By.linkText("view")).click();
+        assertLoopValues(driver, 999, "view");
+
+        actionForLastRecord(driver);
+        driver.findElement(By.linkText("edit")).click();
+        assertLoopValues(driver, 999, "edit");
+
+        // Debug - to delete
         Thread.sleep(3000);
         // cleanup, delete created record
-//        String recordTitleXpath = String.format("//div[contains(text(), '%s')]", title);
-//
-//        driver.findElement(By.xpath(String.format("%s/../../..//button", recordTitleXpath))).click();
-//        String delBtnXpath = String.format("%s/../../..//a[contains(@href, 'delete')]", recordTitleXpath);
-//        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath(delBtnXpath))).click();
-//        Thread.sleep(2000);
+        actionForLastRecord(driver);
+        driver.findElement(By.linkText("delete")).click();
 
+//        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath(delBtnXpath))).click();
+        // Debug - to delete
+        Thread.sleep(5000);
     }
 }
