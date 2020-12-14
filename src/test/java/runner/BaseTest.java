@@ -57,7 +57,7 @@ public abstract class BaseTest {
         this.driver.manage().window().maximize();
     }
 
-    @AfterMethod
+//    @AfterMethod
     protected void setDownAll() {
         driver.quit();
     }
