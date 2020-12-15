@@ -105,15 +105,10 @@ public class EntityLoop1Test extends BaseTest {
     public void loop1Stops() throws InterruptedException {
 
         WebDriver driver = getDriver();
-        driver.get("https://ref.eteam.work/");
-
-        ProjectUtils.login(driver, "user5@tester.com", "hby0INEHw3");
+        ProjectUtils.goAndLogin(driver);
 
         WebElement loop_1 = driver.findElement(By.xpath("//p[contains(text(),'Loop 1')]"));
         ProjectUtils.click(driver, loop_1);
-
-        String entity_name = driver.findElement(By.xpath("//h3[@class='card-title']")).getText();
-        Assert.assertEquals(entity_name, "Loop 1");
 
         final int number_1 = 1;
         final int number_2 = 0;
