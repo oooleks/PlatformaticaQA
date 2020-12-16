@@ -44,18 +44,12 @@ public class EntityLoop1Test extends BaseTest {
     }
 
     private void waitUntilStop(WebElement f1_element, int target_num) throws InterruptedException {
-        if (target_num == 1000) {
+        if (target_num == 1000 || target_num == 999) {
             while (Integer.parseInt(f1_element.getAttribute("value")) < target_num) {
                 Thread.sleep(3000);
             }
         } else {
-            if (target_num == 999) {
-                while (Integer.parseInt(f1_element.getAttribute("value")) < 999) {
-                    Thread.sleep(3000);
-                }
-            } else {
-                Assert.fail("Wrong target number provided to initiate loop (accepted values: 1000 or 999)");
-            }
+            Assert.fail("Wrong target number provided to initiate loop (accepted values: 1000 or 999)");
         }
     }
 
@@ -123,7 +117,7 @@ public class EntityLoop1Test extends BaseTest {
 
         Assert.assertEquals("1000", f1_element.getAttribute("value"));
 
-        driver.findElement(By.xpath("//button[@id='pa-entity-form-save-btn']")).click();
+        ProjectUtils.click(driver, driver.findElement(By.xpath("//button[@id='pa-entity-form-save-btn']")));
         Thread.sleep(1000);
 
         actionForLastRecord(driver);
@@ -137,7 +131,7 @@ public class EntityLoop1Test extends BaseTest {
         f1_edit.sendKeys(String.valueOf(number_2));
         waitUntilStop(f1_edit, 999);
         Thread.sleep(1000);
-        driver.findElement(By.xpath("//button[@id='pa-entity-form-save-btn']")).click();
+        ProjectUtils.click(driver, driver.findElement(By.xpath("//button[@id='pa-entity-form-save-btn']")));
         Thread.sleep(1000);
 
         actionForLastRecord(driver);
