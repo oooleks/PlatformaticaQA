@@ -6,6 +6,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import runner.BaseTest;
+import runner.ProjectUtils;
 
 public class EntityLoop1Test extends BaseTest {
 
@@ -37,7 +38,7 @@ public class EntityLoop1Test extends BaseTest {
             if (mode.equals("edit")) {
                 getWait(1).until(ExpectedConditions.visibilityOfElementLocated(By.linkText(mode))).click();
                 int f1 = Integer.parseInt(getWait(1).until(ExpectedConditions.visibilityOfElementLocated
-                                (By.xpath("//div[@id='_field_container-f1']/child::span/child::input"))).getAttribute("value"));
+                        (By.xpath("//div[@id='_field_container-f1']/child::span/child::input"))).getAttribute("value"));
                 Assert.assertEquals(value, f1);
 
                 int f2 = Integer.parseInt(driver.findElement
@@ -60,7 +61,12 @@ public class EntityLoop1Test extends BaseTest {
     public void loop1Stops() throws InterruptedException {
 
         WebDriver driver = getDriver();
-        ProjectUtils.loginProcedure(driver);
+// user134@tester.com;JtpjhhB34u
+        driver.get("https://999856.eteam.work/");
+        String login = "user134@tester.com";
+        String password = "86ZIvAeptg";
+//        ProjectUtils.loginProcedure(driver);
+//        ProjectUtils.login(driver, ProfileType.DEFAULT);
 
         WebElement loop_1 = driver.findElement(By.xpath("//p[contains(text(),'Loop 1')]"));
         ProjectUtils.click(driver, loop_1);
