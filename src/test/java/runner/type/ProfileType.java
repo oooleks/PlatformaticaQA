@@ -13,7 +13,8 @@ import java.util.Properties;
 public enum ProfileType {
 
     DEFAULT("https://ref.eteam.work"),
-    MARKETPLACE("https://ref.eteam.work");
+    MARKETPLACE("https://ref.eteam.work"),
+    ADMIN("https://999856.eteam.work");
 
     private static Properties credentials;
     static {

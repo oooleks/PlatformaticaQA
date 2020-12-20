@@ -17,11 +17,7 @@ public class EntityFieldsTest extends BaseTest {
 
     @Test
     public void newRecord() {
-
         WebDriver driver = getDriver();
-        driver.get("https://ref.eteam.work");
-
-        ProjectUtils.login(driver, "user1@tester.com", "ah1QNmgkEO");
 
         WebElement tab = driver.findElement(By.xpath("//li[@id='pa-menu-item-45']/a"));
         tab.click();
@@ -201,9 +197,6 @@ public class EntityFieldsTest extends BaseTest {
         final double newDecimal = 101.25;
 
         WebDriver driver = getDriver();
-        driver.get("https://ref.eteam.work");
-
-        ProjectUtils.login(driver, "user1@tester.com", "ah1QNmgkEO");
 
         WebElement fieldsMenu = driver.findElement(By.xpath("//li[@id='pa-menu-item-45']/a"));
         fieldsMenu.click();
@@ -244,9 +237,6 @@ public class EntityFieldsTest extends BaseTest {
         final String invalidEntry = "test";
 
         WebDriver driver = getDriver();
-        driver.get("https://ref.eteam.work");
-
-        ProjectUtils.login(driver, "user1@tester.com", "ah1QNmgkEO");
 
         WebElement fieldsMenu = driver.findElement(By.xpath("//li[@id='pa-menu-item-45']/a"));
         fieldsMenu.click();
@@ -294,7 +284,6 @@ public class EntityFieldsTest extends BaseTest {
         final double newDecimal = 222.33;
 
         WebDriver driver = getDriver();
-        ProjectUtils.loginProcedure(driver);
 
         WebElement sideBarField = driver.findElement(By.xpath("//body/div[1]/div[1]/div[2]/ul[1]/li[4]/a[1]/p[1]"));
         sideBarField.click();
