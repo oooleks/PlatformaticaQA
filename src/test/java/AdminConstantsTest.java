@@ -6,7 +6,6 @@ import org.testng.annotations.Test;
 import runner.BaseTest;
 import runner.type.Profile;
 import runner.type.ProfileType;
-
 import java.util.concurrent.TimeUnit;
 
 @Profile(profile = ProfileType.ADMIN)
@@ -48,14 +47,15 @@ public class AdminConstantsTest extends BaseTest {
     @Test
     public void adminConstants() {
         WebDriver driver = getDriver();
-        driver.manage().timeouts().implicitlyWait(2, TimeUnit.SECONDS);
+        driver.manage().timeouts().implicitlyWait(1, TimeUnit.SECONDS);
 
         goToConstantsList();
-        if (driver.findElements(By.xpath("//td[contains(text(),'Company')]")).size() != 0) {
+        if (driver.findElements(By.xpath("//td[text()='Company Name']")).size() != 0) {
             commandInCMD(driver,"delete constant \"Company Name\"");
+        }
+        if (driver.findElements(By.xpath("//td[text()='Company Email']")).size() != 0) {
             commandInCMD(driver,"delete constant \"Company Email\"");
         }
-
         commandInCMD(driver,"create constant \"Company Name\" = \"Platformatica\"");
         commandInCMD(driver,"create constant \"Company Email\" = \"contact@company.com\"");
 
@@ -71,6 +71,7 @@ public class AdminConstantsTest extends BaseTest {
 
         commandInCMD(driver,"delete constant \"Company Name\"");
         commandInCMD(driver,"delete constant \"Company Email\"");
-        Assert.assertEquals((driver.findElements(By.xpath("//td[contains(text(),'Company')]")).size() == 0), true);
+        Assert.assertTrue(driver.findElements(By.xpath("//td[text()='Company Name']")).size() == 0);
+        Assert.assertTrue(driver.findElements(By.xpath("//td[text()='Company Email']")).size() == 0);
     }
 }
