@@ -6,6 +6,8 @@ import org.testng.annotations.Test;
 import runner.BaseTest;
 import runner.type.Profile;
 import runner.type.ProfileType;
+
+import javax.management.StringValueExp;
 import java.util.concurrent.TimeUnit;
 
 @Profile(profile = ProfileType.ADMIN)
@@ -67,7 +69,7 @@ public class AdminConstantsTest extends BaseTest {
         getWait(1).until(ExpectedConditions.visibilityOfElementLocated
                 (By.xpath("//button[@type='submit']"))).click();
         goToConstantsList();
-        Assert.assertEquals(getCompany("Name").getAttribute("value"),"Platformatica 2");
+        Assert.assertEquals(String.valueOf(getCompany("Name").getAttribute("value")),"Platformatica 2");
 
         commandInCMD(driver,"delete constant \"Company Name\"");
         commandInCMD(driver,"delete constant \"Company Email\"");
