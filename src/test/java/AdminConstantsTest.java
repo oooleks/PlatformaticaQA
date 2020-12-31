@@ -7,7 +7,7 @@ import runner.BaseTest;
 import runner.type.Profile;
 import runner.type.ProfileType;
 
-import javax.management.StringValueExp;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Profile(profile = ProfileType.ADMIN)
@@ -15,6 +15,10 @@ public class AdminConstantsTest extends BaseTest {
 
     private WebDriverWait getWait(int timeoutSecond) {
         return new WebDriverWait(getDriver(), timeoutSecond);
+    }
+
+    private String getRandomText() {
+        return UUID.randomUUID().toString();
     }
 
     private WebElement getCompany(String value) {
@@ -29,7 +33,7 @@ public class AdminConstantsTest extends BaseTest {
                 (By.xpath("//a[text()='Configuration']"))).click();
         getWait(2).until(ExpectedConditions.visibilityOfElementLocated
                 (By.xpath("//i[text()='miscellaneous_services']/parent::a"))).click();
-        getWait(2).until(ExpectedConditions.visibilityOfElementLocated
+        getWait(2).until(ExpectedConditions.elementToBeClickable
                 (By.xpath("//span[text()='List constants']"))).click();
         getWait(2).until(ExpectedConditions.visibilityOfElementLocated
                 (By.xpath("//div[contains(@class,'card-body')]")));
@@ -53,26 +57,28 @@ public class AdminConstantsTest extends BaseTest {
 
         goToConstantsList();
         if (driver.findElements(By.xpath("//td[text()='Company Name']")).size() != 0) {
-            commandInCMD(driver,"delete constant \"Company Name\"");
+            commandInCMD(driver, "delete constant \"Company Name\"");
         }
         if (driver.findElements(By.xpath("//td[text()='Company Email']")).size() != 0) {
-            commandInCMD(driver,"delete constant \"Company Email\"");
+            commandInCMD(driver, "delete constant \"Company Email\"");
         }
-        commandInCMD(driver,"create constant \"Company Name\" = \"Platformatica\"");
-        commandInCMD(driver,"create constant \"Company Email\" = \"contact@company.com\"");
+        String company_name_1 = getRandomText();
+        commandInCMD(driver, "create constant \"Company Name\" = \"" + company_name_1 + "\"");
+        commandInCMD(driver, "create constant \"Company Email\" = \"contact@company.com\"");
 
-        Assert.assertEquals(getCompany("Name").getAttribute("value"),"Platformatica");
-        Assert.assertEquals(getCompany("Email").getAttribute("value"),"contact@company.com");
+        Assert.assertEquals(getCompany("Name").getAttribute("value"), company_name_1);
+        Assert.assertEquals(getCompany("Email").getAttribute("value"), "contact@company.com");
 
+        String company_name_2 = getRandomText();
         getCompany("Name").clear();
-        getCompany("Name").sendKeys("Platformatica 2");
+        getCompany("Name").sendKeys(company_name_2);
         getWait(1).until(ExpectedConditions.visibilityOfElementLocated
                 (By.xpath("//button[@type='submit']"))).click();
         goToConstantsList();
-        Assert.assertEquals(String.valueOf(getCompany("Name").getAttribute("value")),"Platformatica 2");
+        Assert.assertEquals(String.valueOf(getCompany("Name").getAttribute("value")), company_name_2);
 
-        commandInCMD(driver,"delete constant \"Company Name\"");
-        commandInCMD(driver,"delete constant \"Company Email\"");
+        commandInCMD(driver, "delete constant \"Company Name\"");
+        commandInCMD(driver, "delete constant \"Company Email\"");
         Assert.assertTrue(driver.findElements(By.xpath("//td[text()='Company Name']")).size() == 0);
         Assert.assertTrue(driver.findElements(By.xpath("//td[text()='Company Email']")).size() == 0);
     }
