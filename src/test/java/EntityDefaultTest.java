@@ -21,52 +21,47 @@ import runner.type.RunType;
 
 @Run(run = RunType.Single)
 public class EntityDefaultTest extends BaseTest {
+    private class DefaultValues {
+        String fieldString;
+        String fieldText;
+        int fieldInt;
+        double fieldDecimal;
+        String fieldDate;
+        String fieldDateTime;
+        String fieldUser;
+        int linesQty;
 
-    private final DefaultValues defaultValues = new DefaultValues();
-    private DefaultValues currentValues = new DefaultValues(
-                                 UUID.randomUUID().toString(),
-                                "Some random text as Edited Text Value",
-                                (int) Math.random()*100,
-                            (int) (Math.random()*20000) / 100.0,
-                                "23/12/2021",
-                                "23/12/2021 12:34:56",
-                                "user100@tester.com",
-                                9);
-
-
-    /** create and test new default record and save Title value in this.title */
-    public void createRecord(WebDriver driver) {
-
-        driver.findElement(By.xpath("//a[@href='#menu-list-parent']")).click();
-        driver.findElement(By.xpath("//i/following-sibling::p[contains (text(), 'Default')]")).click();
-        WebElement createFolder = driver.findElement(By.xpath("//i[.='create_new_folder']/ancestor::a"));
-        ProjectUtils.click(driver,createFolder);
-
-        WebElement stringLineDefaultData = driver.findElement(By.xpath("//input[@id='string']"));
-        Assert.assertEquals(stringLineDefaultData.getAttribute("value"), defaultValues.fieldString);
-
-        WebElement textLineDefaultData = driver.findElement(By.xpath("//textarea[@id='text']"));
-        Assert.assertEquals(textLineDefaultData.getText(),(defaultValues.fieldText));
-
-        WebElement intLineDefaultData = driver.findElement(By.xpath("//input[@id='int']"));
-        Assert.assertEquals(intLineDefaultData.getAttribute("value"),(String.valueOf(defaultValues.fieldInt)));
-
-        WebElement decimalLineDefaultData = driver.findElement(By.xpath("//input[@id='decimal']"));
-        Assert.assertEquals(decimalLineDefaultData.getAttribute("value"),(String.valueOf(defaultValues.fieldDecimal)));
-
-        WebElement dateLineDefaultData = driver.findElement(By.xpath("//input[@id='date']"));
-        Assert.assertEquals(dateLineDefaultData.getAttribute("value"),(defaultValues.fieldDate));
-
-        WebElement dateTimeLineDefaultData = driver.findElement(By.xpath("//input[@id='datetime']"));
-        Assert.assertEquals(dateTimeLineDefaultData.getAttribute("value"),(defaultValues.fieldDateTime));
-
-        WebElement user = driver.findElement(By.xpath("//div[@class='filter-option-inner']/div[.='User 1 Demo']"));
-        Assert.assertEquals(user.getText(),(defaultValues.fieldUser.toUpperCase()));
-
-        //save new record
-        WebElement saveBtn = driver.findElement(By.xpath("//button[.='Save']"));
-        ProjectUtils.click(driver, saveBtn);
+        public DefaultValues(String fieldString, String fieldText, int fieldInt, double fieldDecimal, String fieldDate, String fieldDateTime, String fieldUser, int linesQty) {
+            this.fieldString = fieldString;
+            this.fieldText = fieldText;
+            this.fieldInt = fieldInt;
+            this.fieldDecimal = fieldDecimal;
+            this.fieldDate = fieldDate;
+            this.fieldDateTime = fieldDateTime;
+            this.fieldUser = fieldUser;
+            this.linesQty = linesQty;
+        }
     }
+
+    private final DefaultValues defaultValues = new DefaultValues(
+            "DEFAULT STRING VALUE",
+            "DEFAULT TEXT VALUE",
+            55,
+            110.32,
+            "01/01/1970",
+            "01/01/1970 00:00:00",
+            "User 1 Demo",
+            9);
+
+    private DefaultValues currentValues = new DefaultValues(
+            UUID.randomUUID().toString(),
+            "Some random text as Edited Text Value",
+            (int) Math.random()*100,
+            (int) (Math.random()*20000) / 100.0,
+            "23/12/2021",
+            "23/12/2021 12:34:56",
+            "user100@tester.com",
+            9);
 
     @ Test
     public void editRecord() {
@@ -84,34 +79,9 @@ public class EntityDefaultTest extends BaseTest {
         recordMenu.click();
 
         WebElement editFunction = driver.findElement(By.xpath("//a[text() = 'edit']"));
-        System.out.println(editFunction);
         ProjectUtils.click(driver, editFunction);
 
-        WebElement fieldString = driver.findElement(By.xpath("//input[@id = 'string']"));
-        fieldString.clear();
-        fieldString.sendKeys(currentValues.fieldString);
-
-        WebElement fieldText = driver.findElement(By.xpath("//span//textarea[@id = 'text']"));
-        fieldText.clear();
-        fieldText.sendKeys(currentValues.fieldText);
-
-        WebElement fieldInt = driver.findElement(By.xpath("//input[@id = 'int']"));
-        fieldInt.clear();
-        fieldInt.sendKeys(String.valueOf(currentValues.fieldInt));
-
-        WebElement fieldDecimal = driver.findElement(By.xpath("//input[@id='decimal']"));
-        fieldDecimal.clear();
-        fieldDecimal.sendKeys(String.valueOf(currentValues.fieldDecimal));
-
-        WebElement fieldDate = driver.findElement(By.xpath("//input[@id='date']"));
-        fieldDate.clear();
-        fieldDate.sendKeys(String.valueOf(currentValues.fieldDate));
-
-        WebElement fieldDateTime = driver.findElement(By.xpath("//input[@id='datetime']"));
-        fieldDateTime.clear();
-        fieldDateTime.sendKeys(String.valueOf(currentValues.fieldDateTime));
-
-        changeUser(driver);
+        validateAndUpdateFields(driver, defaultValues, currentValues);
 
         WebElement saveButton = driver.findElement(By.xpath("//button[text() = 'Save']"));
         ProjectUtils.click(driver, saveButton);
@@ -136,11 +106,23 @@ public class EntityDefaultTest extends BaseTest {
         return null;
     }
 
+    private String formatDouble(double num) {
+        String result = String.format("%.2f", num);
+        int end = result.length();
+        if (result.charAt(end-1) == '0') {
+            if (result.charAt(end-2) == '0') {
+                result = result.substring(0, end-3);
+            } else{
+                result = result.substring(0, end-1);
+            }
+        }
+        return result;
+    }
     private void validateRowFields(WebElement row) {
 
         Assert.assertEquals(row.findElements(By.cssSelector("td")).get(2).getText(), currentValues.fieldText);
         Assert.assertEquals(row.findElements(By.cssSelector("td")).get(3).getText(), String.valueOf(currentValues.fieldInt));
-        Assert.assertEquals(row.findElements(By.cssSelector("td")).get(4).getText(), String.valueOf(currentValues.fieldDecimal));
+        Assert.assertEquals(row.findElements(By.cssSelector("td")).get(4).getText(), formatDouble(currentValues.fieldDecimal));
         Assert.assertEquals(row.findElements(By.cssSelector("td")).get(5).getText(), String.valueOf(currentValues.fieldDate));
         Assert.assertEquals(row.findElements(By.cssSelector("td")).get(6).getText(), String.valueOf(currentValues.fieldDateTime));
         Assert.assertEquals(row.findElements(By.cssSelector("td")).get(9).getText().toLowerCase(), String.valueOf(currentValues.fieldUser));
@@ -153,37 +135,61 @@ public class EntityDefaultTest extends BaseTest {
 
         WebElement scrollDownMenuField = driver.findElement(By.xpath("//span[text() = 'user100@tester.com']"));
         ProjectUtils.click(driver, scrollDownMenuField);
-
-        fieldUser = driver.findElement(By.xpath("//button[@data-id = 'user']/div/div/div"));
-        Assert.assertEquals(fieldUser.getText().toLowerCase(), currentValues.fieldUser);
     }
 
-    @Ignore
-    @Test(dependsOnMethods = "editRecord")
-    public void deleteRecord() {
-
-        //Code to delete default using title value in this.title
+    private void navigateToEntityDefaultPage(WebDriver driver) {
+        //driver.findElement(By.xpath("//a[@href='#menu-list-parent']")).click();
+        driver.findElement(By.xpath("//i/following-sibling::p[contains (text(), 'Default')]")).click();
     }
 
-    @Ignore
+    private void validateAndUpdateFields(WebDriver driver, DefaultValues oldValues, DefaultValues newValues) {
+
+        int count = driver.findElements(By.xpath("//div/label")).size();
+        Assert.assertEquals(count, oldValues.linesQty);
+
+        WebElement stringLineDefaultData = driver.findElement(By.xpath("//input[@id='string']"));
+        Assert.assertEquals(stringLineDefaultData.getAttribute("value"), oldValues.fieldString);
+        stringLineDefaultData.clear();
+        stringLineDefaultData.sendKeys(newValues.fieldString);
+
+        WebElement textLineDefaultData = driver.findElement(By.xpath("//textarea[@id='text']"));
+        Assert.assertEquals(textLineDefaultData.getText(), oldValues.fieldText);
+        textLineDefaultData.clear();
+        textLineDefaultData.sendKeys(newValues.fieldText);
+
+        WebElement intLineDefaultData = driver.findElement(By.xpath("//input[@id='int']"));
+        Assert.assertEquals(intLineDefaultData.getAttribute("value"), (String.valueOf(oldValues.fieldInt)));
+        intLineDefaultData.clear();
+        intLineDefaultData.sendKeys(String.valueOf(newValues.fieldInt));
+
+        WebElement decimalLineDefaultData = driver.findElement(By.xpath("//input[@id='decimal']"));
+        Assert.assertEquals(decimalLineDefaultData.getAttribute("value"), String.format("%.2f", oldValues.fieldDecimal));
+        decimalLineDefaultData.clear();
+        decimalLineDefaultData.sendKeys(String.valueOf(newValues.fieldDecimal));
+
+        WebElement dateLineDefaultData = driver.findElement(By.xpath("//input[@id='date']"));
+        Assert.assertEquals(dateLineDefaultData.getAttribute("value"), oldValues.fieldDate);
+        dateLineDefaultData.clear();
+        dateLineDefaultData.sendKeys(newValues.fieldDate);
+
+        WebElement dateTimeLineDefaultData = driver.findElement(By.xpath("//input[@id='datetime']"));
+        Assert.assertEquals(dateTimeLineDefaultData.getAttribute("value"), oldValues.fieldDateTime);
+        dateTimeLineDefaultData.clear();
+        dateTimeLineDefaultData.sendKeys(newValues.fieldDateTime);
+
+        WebElement user = driver.findElement(By.xpath("//div[@class='filter-option-inner']/div[.='User 1 Demo']"));
+        Assert.assertEquals(user.getText(), (oldValues.fieldUser.toUpperCase()));
+
+        // find new user in the drop-down menu and use it to update
+        WebElement fieldUser = driver.findElement(By.xpath("//div[@id='_field_container-user']/div/button"));
+        ProjectUtils.click(driver, fieldUser);
+
+        WebElement scrollDownMenuField = driver.findElement(By.xpath("//span[text() = '" + newValues.fieldUser + "']"));
+        ProjectUtils.click(driver, scrollDownMenuField);
+    }
+
     @Test
     public void checkDefaultValueAndUpdateThem() throws InterruptedException {
-
-        final String stringLineDefaultText = "DEFAULT STRING VALUE";
-        final String textLineDefaultText = "DEFAULT TEXT VALUE";
-        final int intLineDefault = 55;
-        final double decimalLineDefault = 110.32;
-        final String dateLineDefault = "01/01/1970";
-        final String dateTimeLineDefault = "01/01/1970 00:00:00";
-        final int defaultLinesQty = 9;
-        final String userDefault = "User 1 Demo";
-
-        final String stringLineNewText = "Updated String Value For Checking Purposes";
-        final String textLineNewText = "Updated Text Value";
-        final int intLineNew = 123;
-        final double decimalLineNew = 22.22;
-        final String dateLineNew = "11/11/2011";
-        final String dateTimeLineNew = "11/11/2011 11:11:11";
 
         final String stringEmbedLineDefaultString = "Default String";
         final String textEmbedLineDefaultText = "Default text";
@@ -201,58 +207,16 @@ public class EntityDefaultTest extends BaseTest {
 
         WebDriver driver = getDriver();
 
-        driver.findElement(By.xpath("//a[@href='#menu-list-parent']")).click();
         driver.findElement(By.xpath("//i/following-sibling::p[contains (text(), 'Default')]")).click();
+
         WebElement createFolder = driver.findElement(By.xpath("//i[.='create_new_folder']/ancestor::a"));
         ProjectUtils.click(driver, createFolder);
+
         WebElement saveBtn = driver.findElement(By.xpath("//button[.='Save']"));
         ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView();", saveBtn);
         Assert.assertTrue(saveBtn.isDisplayed());
 
-        int count = driver.findElements(By.xpath("//div/label")).size();
-        Assert.assertTrue(count == defaultLinesQty);
-
-        WebElement stringLineDefaultData = driver.findElement(By.xpath("//input[@id='string']"));
-        Assert.assertTrue(stringLineDefaultData.getAttribute("value").equals(stringLineDefaultText));
-
-
-        WebElement textLineDefaultData = driver.findElement(By.xpath("//textarea[@id='text']"));
-        Assert.assertTrue(textLineDefaultData.getText().equals(textLineDefaultText));
-
-        WebElement intLineDefaultData = driver.findElement(By.xpath("//input[@id='int']"));
-        Assert.assertTrue(intLineDefaultData.getAttribute("value").equals(intLineDefault + ""));
-
-        WebElement decimalLineDefaultData = driver.findElement(By.xpath("//input[@id='decimal']"));
-        Assert.assertTrue(decimalLineDefaultData.getAttribute("value").equals(decimalLineDefault + ""));
-
-        WebElement dateLineDefaultData = driver.findElement(By.xpath("//input[@id='date']"));
-        Assert.assertTrue(dateLineDefaultData.getAttribute("value").equals(dateLineDefault));
-
-        WebElement dateTimeLineDefaultData = driver.findElement(By.xpath("//input[@id='datetime']"));
-        Assert.assertTrue(dateTimeLineDefaultData.getAttribute("value").equals(dateTimeLineDefault));
-
-        WebElement user = driver.findElement(By.xpath("//div[@class='filter-option-inner']/div[.='User 1 Demo']"));
-        Assert.assertTrue(user.getText().equals(userDefault.toUpperCase()));
-
-        stringLineDefaultData.clear();
-        stringLineDefaultData.sendKeys(stringLineNewText);
-        textLineDefaultData.clear();
-        textLineDefaultData.sendKeys(textLineNewText);
-        intLineDefaultData.clear();
-        intLineDefaultData.sendKeys(String.valueOf(intLineNew));
-        decimalLineDefaultData.clear();
-        decimalLineDefaultData.sendKeys(String.valueOf(decimalLineNew));
-        dateLineDefaultData.clear();
-        dateLineDefaultData.sendKeys(dateLineNew);
-        dateTimeLineDefaultData.clear();
-        dateTimeLineDefaultData.sendKeys(dateTimeLineNew);
-
-        WebElement dropdownUsers = driver.findElement(By.xpath("//button[@data-id='user']"));
-        dropdownUsers.click();
-
-        Thread.sleep(700);
-        WebElement listOfUsers = driver.findElement(By.xpath("//span[.='User 4']/ancestor::a"));
-        listOfUsers.click();
+        validateAndUpdateFields(driver, defaultValues, currentValues);
 
         WebElement greenPlus = driver.findElement(By.xpath("//button[@data-table_id='11']"));
         ProjectUtils.click(driver, greenPlus);
@@ -310,24 +274,26 @@ public class EntityDefaultTest extends BaseTest {
         orderBtn.click();
 
         WebElement searchInput = driver.findElement(By.xpath("//input[@placeholder='Search']"));
-        searchInput.sendKeys(stringLineNewText);
+        searchInput.sendKeys(currentValues.fieldString);
 
-        WebElement ourRecord = driver.findElement(By.xpath("//div[contains (text(), 'Updated String Value For Checking Purposes')]/ancestor::a"));
+        WebElement ourRecord = driver.findElement(By.xpath("//div[contains (text(), '" + currentValues.fieldString + "')]/ancestor::a"));
         ourRecord.click();
 
         List<WebElement> listOfNewValues = driver.findElements(By.xpath("//span[@class='pa-view-field']"));
-        Assert.assertEquals(listOfNewValues.get(0).getText(), stringLineNewText);
-        Assert.assertEquals(listOfNewValues.get(1).getText(), textLineNewText);
-        Assert.assertEquals(listOfNewValues.get(2).getText(), intLineNew + "");
-        Assert.assertEquals(listOfNewValues.get(3).getText(), decimalLineNew + "");
-        Assert.assertEquals(listOfNewValues.get(4).getText(), dateLineNew);
-        Assert.assertEquals(listOfNewValues.get(5).getText(), dateTimeLineNew);
+        Assert.assertEquals(listOfNewValues.get(0).getText(), currentValues.fieldString);
+        Assert.assertEquals(listOfNewValues.get(1).getText(), currentValues.fieldText);
+        Assert.assertEquals(listOfNewValues.get(2).getText(), currentValues.fieldInt + "");
+        Assert.assertEquals(listOfNewValues.get(3).getText(), formatDouble(currentValues.fieldDecimal));
+        Assert.assertEquals(listOfNewValues.get(4).getText(), currentValues.fieldDate);
+        Assert.assertEquals(listOfNewValues.get(5).getText(), currentValues.fieldDateTime);
+        WebElement fieldUser = driver.findElement(By.xpath("//div[@class='form-group']/p"));
+        Assert.assertEquals(fieldUser.getText(), currentValues.fieldUser);
 
         List<WebElement> embedDArrayOfNewValues = driver.findElements(By.xpath("//table/tbody/tr/td"));
         Assert.assertEquals(embedDArrayOfNewValues.get(1).getText(), stringEmbedLineNewText);
         Assert.assertEquals(embedDArrayOfNewValues.get(2).getText(), textEmbedLineNewText);
-        Assert.assertEquals(embedDArrayOfNewValues.get(3).getText(), intEmbedLineNew + "");
-        Assert.assertEquals(embedDArrayOfNewValues.get(4).getText(), decimalEmbedLineNew + "");
+        Assert.assertEquals(embedDArrayOfNewValues.get(3).getText(), String.valueOf(intEmbedLineNew));
+        Assert.assertEquals(embedDArrayOfNewValues.get(4).getText(), String.format("%.2f", decimalEmbedLineNew));
         Assert.assertEquals(embedDArrayOfNewValues.get(5).getText(), dateEmbedLineNew);
         Assert.assertEquals(embedDArrayOfNewValues.get(6).getText(), dateTimeEmbedLineNew);
         Assert.assertEquals(embedDArrayOfNewValues.get(9).getText(), userEmbedDSelected);
@@ -336,7 +302,7 @@ public class EntityDefaultTest extends BaseTest {
         driver.navigate().back();
         driver.navigate().back();
 
-        WebElement lastRecordDeleteBtn = null;
+        WebElement lastRecordDeleteBtn;
 
         List<WebElement> deleteBtns = driver.findElements(By.xpath("//a[.='delete']"));
 
@@ -374,7 +340,7 @@ public class EntityDefaultTest extends BaseTest {
         newRecord.click();
     }
 
-    public void entityCreation() {
+    private void entityCreation() {
 
         WebDriver driver = getDriver();
         login(driver);
@@ -384,7 +350,7 @@ public class EntityDefaultTest extends BaseTest {
 
 
 
-    public boolean isInt(String str){
+    private boolean isInt(String str){
 
         try
         {
@@ -408,7 +374,7 @@ public class EntityDefaultTest extends BaseTest {
     }
 
 
-    public boolean isValidDateFormat(String dateStr) {
+    private boolean isValidDateFormat(String dateStr) {
 
         DateFormat sdf = new SimpleDateFormat(dateStr);
         sdf.setLenient(false);
@@ -563,54 +529,79 @@ public class EntityDefaultTest extends BaseTest {
 
         Assert.assertTrue(isDouble(allCells.get(4).getText()));
     }
-}
 
 
-class DefaultValues {
-    String fieldString;
-    String fieldText;
-    int fieldInt;
-    double fieldDecimal;
-    String fieldDate;
-    String fieldDateTime;
-    String fieldUser;
-    int linesQty;
+    /** create and test new default record and save Title value in this.title */
+    private void createRecord(WebDriver driver) {
 
-    /** set default values */
-    public DefaultValues() {
-        this.fieldString = "DEFAULT STRING VALUE";
-        this.fieldText = "DEFAULT TEXT VALUE";
-        this.fieldInt = 55;
-        this.fieldDecimal = 110.32;
-        this.fieldDate = "01/01/1970";
-        this.fieldDateTime = "01/01/1970 00:00:00";
-        this.fieldUser = "User 1 Demo";
-        this.linesQty = 9;
+        driver.findElement(By.xpath("//a[@href='#menu-list-parent']")).click();
+        driver.findElement(By.xpath("//i/following-sibling::p[contains (text(), 'Default')]")).click();
+        WebElement createFolder = driver.findElement(By.xpath("//i[.='create_new_folder']/ancestor::a"));
+        ProjectUtils.click(driver,createFolder);
+
+        WebElement stringLineDefaultData = driver.findElement(By.xpath("//input[@id='string']"));
+        Assert.assertEquals(stringLineDefaultData.getAttribute("value"), defaultValues.fieldString);
+
+        WebElement textLineDefaultData = driver.findElement(By.xpath("//textarea[@id='text']"));
+        Assert.assertEquals(textLineDefaultData.getText(),(defaultValues.fieldText));
+
+        WebElement intLineDefaultData = driver.findElement(By.xpath("//input[@id='int']"));
+        Assert.assertEquals(intLineDefaultData.getAttribute("value"),(String.valueOf(defaultValues.fieldInt)));
+
+        WebElement decimalLineDefaultData = driver.findElement(By.xpath("//input[@id='decimal']"));
+        Assert.assertEquals(decimalLineDefaultData.getAttribute("value"),(String.format("%.2f", defaultValues.fieldDecimal)));
+
+        WebElement dateLineDefaultData = driver.findElement(By.xpath("//input[@id='date']"));
+        Assert.assertEquals(dateLineDefaultData.getAttribute("value"),(defaultValues.fieldDate));
+
+        WebElement dateTimeLineDefaultData = driver.findElement(By.xpath("//input[@id='datetime']"));
+        Assert.assertEquals(dateTimeLineDefaultData.getAttribute("value"),(defaultValues.fieldDateTime));
+
+        WebElement user = driver.findElement(By.xpath("//div[@class='filter-option-inner']/div[.='User 1 Demo']"));
+        Assert.assertEquals(user.getText(),(defaultValues.fieldUser.toUpperCase()));
+
+        //save new record
+        WebElement saveBtn = driver.findElement(By.xpath("//button[.='Save']"));
+        ProjectUtils.click(driver, saveBtn);
     }
 
-    /** setting arbitrary values */
-    public DefaultValues(String fieldString, String fieldText, int fieldInt, double fieldDecimal, String fieldDate, String fieldDateTime, String fieldUser, int linesQty) {
-        this.fieldString = fieldString;
-        this.fieldText = fieldText;
-        this.fieldInt = fieldInt;
-        this.fieldDecimal = fieldDecimal;
-        this.fieldDate = fieldDate;
-        this.fieldDateTime = fieldDateTime;
-        this.fieldUser = fieldUser;
-        this.linesQty = linesQty;
-    }
 
-    @Override
-    public String toString() {
-        return "DefaultValues{" +
-                "fieldString='" + fieldString + '\'' +
-                ", fieldText='" + fieldText + '\'' +
-                ", fieldInt=" + fieldInt +
-                ", fieldDecimal=" + fieldDecimal +
-                ", fieldDate='" + fieldDate + '\'' +
-                ", fieldDateTime='" + fieldDateTime + '\'' +
-                ", fieldUser='" + fieldUser + '\'' +
-                ", linesQty=" + linesQty +
-                '}';
+    @Test
+    public void entityDefaultDelete() {
+        final String title = UUID.randomUUID().toString();
+        WebDriver driver = getDriver();
+
+        WebElement defaultBtn = driver.findElement(By.xpath("//p[contains(text(),' Default ')]"));
+        ProjectUtils.click(driver,defaultBtn);
+
+
+        WebElement newFolderBtn = driver.findElement(By.xpath("//i[contains(text(),'create_new_folder')]"));
+        ProjectUtils.click(driver,newFolderBtn);
+
+        WebElement newField = driver.findElement(By.xpath("//input[@name='entity_form_data[string]']"));
+        newField.clear();
+        newField.sendKeys(title);
+
+        WebElement saveBtn = driver.findElement(By.xpath("//button[@id='pa-entity-form-save-btn']"));
+        ProjectUtils.click(driver,saveBtn);
+
+        WebElement list = driver.findElement(By.xpath("//*[@class='nav-link active']"));
+        list.click();
+
+        WebElement firstColumn = driver.findElement(By.xpath("//*[@id='pa-all-entities-table']/tbody/tr/td[2]/a"));
+        Assert.assertEquals(firstColumn.getText(),title);
+
+        WebElement actionBtn = driver.findElement(By.xpath("//button/i[contains(@class, 'material-icons')]/.."));
+        actionBtn.click();
+
+        WebElement deleteBtn = driver.findElement(By.xpath("//a[text() = 'delete']"));
+        ProjectUtils.click(driver,deleteBtn);
+
+        WebElement recycleBin = driver.findElement(By.xpath("//i[contains(text(),'delete_outline')]"));
+        recycleBin.click();
+
+        WebElement deletedField = driver.findElement(By.xpath("//*[contains(text(),'" + title + "')]"));
+        Assert.assertEquals(deletedField.getText(), title);
+
     }
 }

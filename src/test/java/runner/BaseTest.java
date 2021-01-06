@@ -5,22 +5,28 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.ITestResult;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.*;
 import runner.type.ProfileType;
 import runner.type.RunType;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+@Listeners(TestOrder.class)
 public abstract class  BaseTest {
+    private String screenshotDirectoryName = null;
 
     public static final String HUB_URL = "http://localhost:4444/wd/hub";
 
@@ -46,6 +52,7 @@ public abstract class  BaseTest {
     }
 
     private WebDriver driver;
+    private WebDriverWait webDriverWait;
 
     private RunType runType = RunType.Single;
     private ProfileType profileType = ProfileType.DEFAULT;
@@ -53,20 +60,38 @@ public abstract class  BaseTest {
     private WebDriver createBrowser() {
         WebDriver result;
 
+        Map<String, Object> chromePreferences = new HashMap<>();
+        chromePreferences.put("profile.default_content_settings.geolocation", 2);
+        chromePreferences.put("credentials_enable_service", false);
+        chromePreferences.put("password_manager_enabled", false);
+        chromePreferences.put("safebrowsing.enabled", "true");
+        ChromeOptions chromeOptions = new ChromeOptions();
+        chromeOptions.setExperimentalOption("prefs", chromePreferences);
+        chromeOptions.addArguments("--window-size=1920,1080");
+
         if (isRemoteWebDriver()) {
+            chromeOptions.setHeadless(true);
+            chromeOptions.addArguments("--disable-gpu");
             try {
-                result = new RemoteWebDriver(new URL(HUB_URL), new ChromeOptions());
+                result = new RemoteWebDriver(new URL(HUB_URL), chromeOptions);
             } catch (MalformedURLException e) {
                 throw new RuntimeException(e);
             }
         } else {
-            result = new ChromeDriver();
+            result = new ChromeDriver(chromeOptions);
         }
 
         result.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-        result.manage().window().maximize();
+
+        LoggerUtils.log("Browser opened");
 
         return result;
+    }
+
+    private void quitBrowser() {
+        getDriver().quit();
+
+        LoggerUtils.log("Browser closed");
     }
 
     private void startTest(WebDriver driver, ProfileType profileType) {
@@ -101,8 +126,31 @@ public abstract class  BaseTest {
 
     @AfterMethod
     protected void afterMethod(Method method, ITestResult tr) {
+        boolean createdDirectory = false;
+        if (ITestResult.FAILURE == tr.getStatus()) {
+            if (screenshotDirectoryName == null) {
+                createdDirectory = true;
+                String tempPath = System.getProperty("java.io.tmpdir");
+                // on windows last char is '\', on Linux is 'p' so need to add separator
+                if (tempPath.charAt(tempPath.length()-1) != File.separatorChar) {
+                    tempPath += File.separator;
+                }
+                screenshotDirectoryName = tempPath
+                        + (new SimpleDateFormat("YYYY-MM-dd-kk-mm-").format(new Date()))
+                        + UUID.randomUUID().toString();
+            }
+
+            ScreenshotUtils.createScreenshotsDir(screenshotDirectoryName);
+            if (createdDirectory) {
+                LoggerUtils.logYellow("Created directory to save screenshots: " + screenshotDirectoryName);
+            }
+
+            ScreenshotUtils.takeScreenShot(getDriver(), String.format("%s%s%s.%s.png",
+                    screenshotDirectoryName, File.separator, tr.getInstanceName(), tr.getName()));
+        }
+
         if (runType == RunType.Single) {
-            getDriver().quit();
+            quitBrowser();
         }
 
         long executionTime = (tr.getEndMillis() - tr.getStartMillis()) / 1000;
@@ -113,11 +161,38 @@ public abstract class  BaseTest {
     @AfterClass
     protected void afterClass() {
         if (runType == RunType.Multiple) {
-            getDriver().quit();
+            quitBrowser();
+        }
+    }
+
+    @AfterSuite
+    protected void afterSuite() {
+        if (remoteWebDriver) {
+            try {
+                if (screenshotDirectoryName != null) {
+                    ScreenshotUtils.uploadScreenshotsDir(screenshotDirectoryName);
+                }
+            } catch (Exception exception) {
+                LoggerUtils.logRed(String.format("unable to upload images directory %s to Google drive \n%s",
+                        screenshotDirectoryName,
+                        DriveUtils.getStackTrace(exception)));
+            }
         }
     }
 
     protected WebDriver getDriver() {
         return driver;
+    }
+
+    protected WebDriverWait getWebDriverWait() {
+        if (webDriverWait == null) {
+            webDriverWait = new WebDriverWait(driver, 10);
+        }
+
+        return webDriverWait;
+    }
+
+    protected String getScreenshotDirectoryName() {
+        return screenshotDirectoryName;
     }
 }

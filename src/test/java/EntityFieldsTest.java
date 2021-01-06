@@ -1,361 +1,272 @@
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-
-import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.openqa.selenium.*;
+import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import org.testng.Assert;
 import runner.BaseTest;
 import runner.ProjectUtils;
 import runner.type.Run;
 import runner.type.RunType;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 @Run(run = RunType.Multiple)
 public class EntityFieldsTest extends BaseTest {
 
-    @Test
-    public void newRecord() {
+    private static final String TITLE = UUID.randomUUID().toString();
+    private static final String COMMENT = RandomStringUtils.randomAlphanumeric(25);
+    private static final String INT = Integer.toString(ThreadLocalRandom.current().nextInt(100, 200));
+    private static final String DECIMAL = String.format("%.2f", (Math.random() * 20000) / 100.0);
+    private static final String DATE = new SimpleDateFormat("dd/MM/yyyy").format(new Date());
+    private static final String DATE_TIME = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date());
 
+    private static final By fieldsPageButtonIcon = By.xpath("//p[contains(text(), ' Fields ')]/..");
+    private static final By createNewIcon = (By.xpath("//i[text()='create_new_folder']"));
+    private static final By saveButton = By.cssSelector("button[id*='save']");
+    private static final By saveDraftButton = By.cssSelector("button[id*='draft']");
+    private static final By titleInputField = By.id("title");
+    private static final By commentInputField = By.id("comments");
+    private static final By intInputField = By.id("int");
+    private static final By decimalInputField = By.id("decimal");
+    private static final By dateInputField = By.id("date");
+    private static final By dateTimeInputField = By.id("datetime");
+    private static final By selectUserField = By.cssSelector("button[data-id=user]");
+    private static final By rows = By.xpath("//tbody/tr");
+    private static final By recycleBinIcon = By.cssSelector("a[href*=recycle] > i");
+    private static final By errorMessage = By.cssSelector("div[id*=error]");
+
+    private WebDriverWait getWait(int timeout) { return new WebDriverWait(getDriver(), timeout); }
+
+    private WebDriverWait getWait() { return getWait(5); }
+
+    private Actions getActions() { return new Actions(getDriver()); }
+
+    public JavascriptExecutor getExecutor() { return (JavascriptExecutor)getDriver(); }
+
+    private void click(By by) {
+        getWait().until(ExpectedConditions.elementToBeClickable(by)).click();
+    }
+
+    private String getText(By by) {
+        return getWait().until(ExpectedConditions.visibilityOfElementLocated(by)).getText();
+    }
+
+    private String getCurrentUser() {
+        return getText(By.id("navbarDropdownProfile")).split(" ")[1].toLowerCase();
+    }
+
+    private String getRandomUser() {
+        List<WebElement> userList = getDriver().findElements(By.cssSelector("select#user > option"));
+        return userList.get(ThreadLocalRandom.current().nextInt(1, userList.size())).getText();
+    }
+
+    private void goFieldsPage() {
         WebDriver driver = getDriver();
+        getExecutor().executeScript("arguments[0].click();", driver.findElement(fieldsPageButtonIcon));
+    }
 
-        WebElement tab = driver.findElement(By.xpath("//li[@id='pa-menu-item-45']/a"));
-        tab.click();
-        WebElement newRecord = driver.findElement(By.xpath("//i[text()='create_new_folder']"));
-        newRecord.click();
-
-        final String title = UUID.randomUUID().toString();
-        final String comment = "simple text";
-        final int number = 10;
-
-        WebElement titleElement = driver.findElement(By.xpath("//input[@name='entity_form_data[title]']"));
-        titleElement.sendKeys(title);
-        WebElement commentElement = driver.findElement(By.xpath("//textarea[@name='entity_form_data[comments]']"));
-        commentElement.sendKeys(comment);
-        WebElement numberElement = driver.findElement(By.xpath("//input[@name='entity_form_data[int]']"));
-        numberElement.sendKeys(String.valueOf(number));
-
-        WebElement submit = driver.findElement(By.id("pa-entity-form-save-btn"));
-        ProjectUtils.click(driver, submit);
-
-        // validation of record
-        List<WebElement> recordRowsWe = driver.findElements(By.cssSelector("tbody > tr"));
-        if (recordRowsWe.size() == 0) {
-            Assert.fail("No Fields records found after creating one record");
+    private void sendKeys(By by, String text) {
+        WebElement textInputField = getWait().until(ExpectedConditions.visibilityOfElementLocated(by));
+        if (by.toString().contains("date")) {
+            textInputField.click();
         }
+        textInputField.clear();
+        textInputField.sendKeys(text);
+        getWait(2).until(ExpectedConditions.attributeContains(textInputField, "value", text));
+    }
 
-        boolean titleFound = false;
-        int rowsPerPage;
-        int numOfAllRecords = Integer.parseInt(getWait(1).until(ExpectedConditions
-                .visibilityOfElementLocated(By.xpath("//span[@class='pagination-info']")))
-                .getText().split(" ")[5]);
-        WebElement rowsPerPageWe = driver.findElement(By.cssSelector("span.page-size"));
-        if (rowsPerPageWe.isDisplayed()) {
-            rowsPerPage = Integer.parseInt(rowsPerPageWe.getText());
+    private void selectUser(String user) {
+        WebElement userText = getWait().until(ExpectedConditions.visibilityOfElementLocated(By
+                .cssSelector("div[class$=inner-inner]")));
+        getActions().moveToElement(userText).perform();
+        new Select(getDriver().findElement(By.cssSelector("select#user"))).selectByVisibleText(user);
+    }
+
+    private boolean isVisible(By by) {
+        List<WebElement> list = getDriver().findElements(by);
+        if (list.isEmpty()) {
+            return false;
         } else {
-            rowsPerPage = 26;
+            return list.get(0).isDisplayed();
         }
-        if (numOfAllRecords > rowsPerPage) {
-            boolean firstRound = true;
-            while (firstRound) {
-                if (isTitleFound(title)) {
-                    titleFound = true;
-                    break;
-                    }
-                List<WebElement> paginationButtons = driver.findElements(By.cssSelector("a.page-link"));
-                WebElement paginationNext = paginationButtons.get(paginationButtons.size() -1);
-                paginationNext.click();
-                WebElement paginationFirstIndexWe = driver.findElements(By.cssSelector("a.page-link")).get(1);
-                String paginationFirstIndex = paginationFirstIndexWe.getText();
-                boolean paginationFirstIndexActive =
-                        paginationFirstIndexWe.getCssValue("color").equals("rgba(255, 255, 255, 1)");
-                if (paginationFirstIndex.equals("1") && paginationFirstIndexActive) {
-                    firstRound = false;
-                }
-            }
+    }
+
+    private void softWaitInvisibilityOf(WebElement element, int timeout) {
+        try {
+            getWait(timeout).until(ExpectedConditions.invisibilityOf(element));
+        } catch (TimeoutException ignored) {}
+    }
+
+    private void clickSandwichAction(WebElement row, String menuItem) throws InterruptedException {
+        row.findElement(By.tagName("button")).click();
+        Thread.sleep(500);
+        row.findElement(By.xpath(String.format("//li/a[contains(@href, '%s')]", menuItem.toLowerCase()))).click();
+    }
+
+    private void clickButton(String buttonType) {
+        WebDriver driver = getDriver();
+        if (buttonType.equalsIgnoreCase("save")) {
+            ProjectUtils.click(driver, driver.findElement(saveButton));
+        } else if ((buttonType.equalsIgnoreCase("draft"))) {
+            driver.findElement(saveDraftButton).click();
         } else {
-            titleFound = isTitleFound(title);
+            throw new RuntimeException("Unexpected button type");
         }
-
-        Assert.assertTrue(titleFound, "Created record not found");
-
-        String recordTitleXpath = String.format("//div[contains(text(), '%s')]", title);
-        By newRecordComment = By.xpath(String.format("%s/../../../td[3]/a/div", recordTitleXpath));
-        By newRecordInt = By.xpath(String.format("%s/../../../td[4]/a/div", recordTitleXpath));
-        WebElement createdRecordComment = driver.findElement(newRecordComment);
-        WebElement createdRecordInt = driver.findElement(newRecordInt);
-
-        Assert.assertEquals(createdRecordComment.getText(), comment, "Created record comment text issue");
-        Assert.assertEquals(createdRecordInt.getText(), Integer.toString(number),
-                "Created record int value issue");
-
-        // cleanup, delete created record
-        deleteRecordByTitle(title);
     }
 
-    private boolean isTitleFound(String title) {
+    private String getRecordTypeIcon() {
+        String script = "return window.getComputedStyle(document.querySelector('td i.fa'),'::before').getPropertyValue('content')";
+        return getExecutor().executeScript(script).toString().replace("\"", "");
+    }
 
-        List<WebElement> titlesWe = getDriver().findElements(By.xpath("//tr/td[2]"));
-        for (WebElement we : titlesWe) {
-            if (we.getText().equals(title)) {
-                return true;
+    @Test
+    public void createNewRecordTest() {
+
+        WebDriver driver = getDriver();
+        ProjectUtils.reset(driver);
+        driver.manage().timeouts().implicitlyWait(0, TimeUnit.SECONDS);
+
+        String currentUser = getCurrentUser();
+        String[] expectedValues = {null, TITLE, COMMENT, INT, DECIMAL, DATE, DATE_TIME, null, currentUser, null, null};
+        goFieldsPage();
+
+        driver.findElement(createNewIcon).click();
+        getWait(10).until(ExpectedConditions.visibilityOfElementLocated(titleInputField));
+        sendKeys(titleInputField, TITLE);
+        sendKeys(commentInputField, COMMENT);
+        sendKeys(intInputField, INT);
+        sendKeys(decimalInputField, DECIMAL);
+        sendKeys(dateInputField, DATE);
+        sendKeys(dateTimeInputField, DATE_TIME);
+        selectUser(currentUser);
+        clickButton("save");
+
+        List<WebElement> records = getWait().until(ExpectedConditions.visibilityOfAllElementsLocatedBy(rows));
+        Assert.assertEquals(records.size(), 1);
+        List<WebElement> cols = records.get(0).findElements(By.tagName("td"));
+        Assert.assertEquals(cols.size(), expectedValues.length);
+        for (int i = 1; i < cols.size(); i++) {
+            if (expectedValues[i] != null){
+                Assert.assertEquals(cols.get(i).getText(), expectedValues[i]);
             }
         }
-        return false;
+        Assert.assertEquals(getRecordTypeIcon(), "", "Wrong record icon, expected '\\f046'");
     }
 
-    private void deleteRecordByTitle(String title) {
-
-        WebDriver driver = getDriver();
-        String recordTitleXpath = String.format("//div[contains(text(), '%s')]", title);
-
-        By recordMenuButton = By.xpath(String.format("%s/../../..//button", recordTitleXpath));
-        By deleteButton = By.xpath(String.format("%s/../../..//a[contains(@href, 'delete')]", recordTitleXpath));
-
-        driver.findElement(recordMenuButton).click();
-        ProjectUtils.click(getDriver(),
-                getWait(2).until(ExpectedConditions.elementToBeClickable(deleteButton)));
-    }
-    private WebDriverWait getWait(int timeoutSecond) {
-        return new WebDriverWait(getDriver(), timeoutSecond);
-    }
-
-    @Ignore
     @Test
-    public void editForm() throws InterruptedException {
-
-        final String newTitle = "A-12/12/2020 has been edited";
-        final String newComment = "Entry is created to test Edit functionality. Please do not delete.(Edited)";
-        final int newNumber = 102;
-        final double newDecimal = 101.25;
+    public void createNewDraftTest() {
 
         WebDriver driver = getDriver();
+        driver.manage().timeouts().implicitlyWait(0, TimeUnit.SECONDS);
 
-        WebElement fieldsMenu = driver.findElement(By.xpath("//li[@id='pa-menu-item-45']/a"));
-        fieldsMenu.click();
-        WebElement hamburgerMenu = driver.findElement(By.xpath("//tr[@data-row_id='473']/td[11]//button"));
-        hamburgerMenu.click();
-        Thread.sleep(500);
-        WebElement editButton =
-                driver.findElement(By.xpath("//a[@href='index.php?action=action_edit&entity_id=5&row_id=473']"));
-        editButton.click();
+        String currentUser = getCurrentUser();
+        String[] expectedValues = {null, TITLE, COMMENT, "0", "0", null, null, null, currentUser, null, null};
+        goFieldsPage();
 
-        Assert.assertEquals(driver.getCurrentUrl(),
-                "https://ref.eteam.work/index.php?action=action_edit&entity_id=5&row_id=473");
+        click(createNewIcon);
+        getWait(10).until(ExpectedConditions.visibilityOfElementLocated(titleInputField));
+        sendKeys(titleInputField, TITLE);
+        sendKeys(commentInputField, COMMENT);
+        selectUser(currentUser);
+        clickButton("draft");
 
-        WebElement editTitle = driver.findElement(By.xpath("//input[@name='entity_form_data[title]']"));
-        editTitle.clear();
-        editTitle.sendKeys(newTitle);
-        WebElement editComments = driver.findElement(By.xpath("//textarea[@name='entity_form_data[comments]']"));
-        editComments.clear();
-        editComments.sendKeys(newComment);
-        WebElement editInt = driver.findElement(By.xpath("//input[@name='entity_form_data[int]']"));
-        editInt.clear();
-        editInt.sendKeys(String.valueOf(newNumber));
-        WebElement editDecimal = driver.findElement(By.xpath("//input[@name='entity_form_data[decimal]']"));
-        editDecimal.clear();
-        editDecimal.sendKeys(String.valueOf(newDecimal));
-
-        WebElement tableString = driver.findElement(By.xpath("//textarea[@name='t-9-r-1-data[string]']"));
-        JavascriptExecutor js = (JavascriptExecutor) driver;
-        js.executeScript("arguments[0].scrollIntoView();", tableString);
-        tableString.clear();
-        tableString.sendKeys(newTitle);
-        WebElement tableText = driver.findElement(By.xpath("//textarea[@name='t-9-r-1-data[text]']"));
-        tableText.clear();
-        tableText.sendKeys(newComment);
-        WebElement tableInt = driver.findElement(By.xpath("//textarea[@name='t-9-r-1-data[int]']"));
-        tableInt.clear();
-        tableInt.sendKeys(String.valueOf(newNumber));
-        WebElement tableDecimal = driver.findElement(By.xpath("//textarea[@name='t-9-r-1-data[decimal]']"));
-        tableDecimal.clear();
-        tableDecimal.sendKeys(String.valueOf(newDecimal));
-
-        WebElement saveButton = driver.findElement(By.xpath("//button[@id='pa-entity-form-save-btn']"));
-        ProjectUtils.click(driver, saveButton);
-
-        Assert.assertEquals(driver.getCurrentUrl(),
-                "https://ref.eteam.work/index.php?action=action_list&entity_id=5&filter");
-        Assert.assertEquals(driver.findElement(By.xpath("//tr[@data-row_id='473']/td[2]/a/div")).getText(),newTitle);
-        Assert.assertEquals(driver.findElement(By.xpath("//tr[@data-row_id='473']/td[3]/a/div")).getText(),newComment);
-        Assert.assertEquals(driver.findElement(By.xpath("//tr[@data-row_id='473']/td[4]/a/div"))
-                .getText(),String.valueOf(newNumber));
-        Assert.assertEquals(driver.findElement(By.xpath("//tr[@data-row_id='473']/td[5]/a/div")).
-                getText(),String.valueOf(newDecimal));
+        List<WebElement> records = getWait().until(ExpectedConditions.visibilityOfAllElementsLocatedBy(rows));
+        Assert.assertEquals(records.size(), 1);
+        List<WebElement> cols = records.get(0).findElements(By.tagName("td"));
+        Assert.assertEquals(cols.size(), expectedValues.length);
+        for (int i = 1; i < cols.size(); i++) {
+            if (expectedValues[i] != null){
+                Assert.assertEquals(cols.get(i).getText(), expectedValues[i]);
+            }
+        }
+        Assert.assertEquals(getRecordTypeIcon(), "", "Wrong draft icon, expected '\\f040'");
     }
 
-    @Ignore
-    @Test
-    public void saveDraft() throws InterruptedException {
+    @Test(dependsOnMethods = "createNewRecordTest")
+    public void editRecordTest() throws InterruptedException {
 
-        final String newTitle = "A-12/12/2020 has been edited";
-        final String newComment = "Entry is created to test Edit functionality. Please do not delete.(Edited)";
-        final int newNumber = 102;
-        final double newDecimal = 101.25;
+        final String NEW_TITLE = String.format("%s_EditTextAllNew", UUID.randomUUID().toString());
+        final String NEW_COMMENT = "New comment text for edit test";
+        final String NEW_INT = Integer.toString(ThreadLocalRandom.current().nextInt(300, 400));
+        final String NEW_DECIMAL = "128.01";
+        final String NEW_DATE = "25/10/2018";
+        final String NEW_DATE_TIME = "25/10/2018 08:22:05";
+        String randomUser = "";
+        String[] expectedValues = {null, NEW_TITLE, NEW_COMMENT, NEW_INT, NEW_DECIMAL, NEW_DATE, NEW_DATE_TIME, null,
+                randomUser, null, null};
 
         WebDriver driver = getDriver();
+        driver.manage().timeouts().implicitlyWait(0, TimeUnit.SECONDS);
+        goFieldsPage();
 
-        WebElement fieldsMenu = driver.findElement(By.xpath("//li[@id='pa-menu-item-45']/a"));
-        fieldsMenu.click();
-        WebElement hamburgerMenu = driver.findElement(By.xpath("//tr[@data-row_id='473']/td[11]//button"));
-        hamburgerMenu.click();
-        Thread.sleep(500);
-        WebElement editButton =
-                driver.findElement(By.xpath("//a[@href='index.php?action=action_edit&entity_id=5&row_id=473']"));
-        editButton.click();
+        WebElement record = getWait().until(ExpectedConditions.visibilityOfElementLocated(rows));
+        clickSandwichAction(record, "edit");
 
-        Assert.assertEquals(driver.getCurrentUrl(),
-                "https://ref.eteam.work/index.php?action=action_edit&entity_id=5&row_id=473");
+        getWait(10).until(ExpectedConditions.visibilityOfElementLocated(titleInputField));
+        expectedValues[8] = randomUser = getRandomUser();
+        sendKeys(titleInputField, NEW_TITLE);
+        sendKeys(commentInputField, NEW_COMMENT);
+        sendKeys(intInputField, NEW_INT);
+        sendKeys(decimalInputField, NEW_DECIMAL);
+        sendKeys(dateInputField, NEW_DATE);
+        sendKeys(dateTimeInputField, NEW_DATE_TIME);
+        selectUser(randomUser);
+        clickButton("save");
 
-        WebElement editTitle = driver.findElement(By.xpath("//input[@name='entity_form_data[title]']"));
-        editTitle.clear();
-        editTitle.sendKeys(newTitle);
-        WebElement editComments = driver.findElement(By.xpath("//textarea[@name='entity_form_data[comments]']"));
-        editComments.clear();
-        editComments.sendKeys(newComment);
-        WebElement editInt = driver.findElement(By.xpath("//input[@name='entity_form_data[int]']"));
-        editInt.clear();
-        editInt.sendKeys(String.valueOf(newNumber));
-        WebElement editDecimal = driver.findElement(By.xpath("//input[@name='entity_form_data[decimal]']"));
-        editDecimal.clear();
-        editDecimal.sendKeys(String.valueOf(newDecimal));
-
-        WebElement saveDraft = driver.findElement(By.xpath("//button[@id='pa-entity-form-draft-btn']"));
-        ProjectUtils.click(driver, saveDraft);
-        WebElement pencil = driver.findElement(By.xpath("//tr[@data-row_id='473']/td/i[@class='fa fa-pencil']"));
-
-        Assert.assertTrue(pencil.isDisplayed());
+        List<WebElement> records = getWait().until(ExpectedConditions.visibilityOfAllElementsLocatedBy(rows));
+        Assert.assertEquals(records.size(), 1);
+        List<WebElement> cols = records.get(0).findElements(By.tagName("td"));
+        Assert.assertEquals(cols.size(), expectedValues.length);
+        for (int i = 1; i < cols.size(); i++) {
+            if (expectedValues[i] != null){
+                Assert.assertEquals(cols.get(i).getText(), expectedValues[i]);
+            }
+        }
+        Assert.assertEquals(getRecordTypeIcon(), "", "Wrong record icon, expected '\\f046'");
     }
 
-    @Ignore
-    @Test
-    public void invalidEditEntry() throws InterruptedException {
+    @Test(dependsOnMethods = {"createNewRecordTest", "editRecordTest"})
+    public void deleteRecordTest() throws InterruptedException {
 
-        final String invalidEntry = "test";
-
+        final String recordTitle;
         WebDriver driver = getDriver();
+        driver.manage().timeouts().implicitlyWait(0, TimeUnit.SECONDS);
+        goFieldsPage();
+        WebElement record = getWait().until(ExpectedConditions.visibilityOfElementLocated(rows));
+        recordTitle = record.findElement(By.xpath("//td[2]")).getText();
+        clickSandwichAction(record, "delete");
 
-        WebElement fieldsMenu = driver.findElement(By.xpath("//li[@id='pa-menu-item-45']/a"));
-        fieldsMenu.click();
-        WebElement hamburgerMenu = driver.findElement(By.xpath("//tr[@data-row_id='473']/td[11]//button"));
-        hamburgerMenu.click();
-        Thread.sleep(500);
-        WebElement editButton =
-                driver.findElement(By.xpath("//a[@href='index.php?action=action_edit&entity_id=5&row_id=473']"));
-        editButton.click();
+        softWaitInvisibilityOf(record, 2);
+        Assert.assertFalse(isVisible(rows));
 
-        Assert.assertEquals(driver.getCurrentUrl(),
-                "https://ref.eteam.work/index.php?action=action_edit&entity_id=5&row_id=473");
+        driver.findElement(recycleBinIcon).click();
+        List<WebElement> deletedItems = driver.findElements(rows);
+        Assert.assertEquals(deletedItems.size(), 1);
+        Assert.assertEquals(deletedItems.get(0).findElement(By.xpath("//span[contains(text(), 'Title:')]/b")).getText(),
+                recordTitle);
+    }
 
-        WebElement editInt = driver.findElement(By.xpath("//input[@name='entity_form_data[int]']"));
-        editInt.clear();
-        editInt.sendKeys(invalidEntry);
-        WebElement editDecimal = driver.findElement(By.xpath("//input[@name='entity_form_data[decimal]']"));
-        editDecimal.clear();
-        editDecimal.sendKeys(invalidEntry);
+    @Test
+    public void invalidIntEntryCreateTest() {
 
-        WebElement tableInt = driver.findElement(By.xpath("//textarea[@name='t-9-r-1-data[int]']"));
-        JavascriptExecutor js = (JavascriptExecutor) driver;
-        js.executeScript("arguments[0].scrollIntoView();", tableInt);
-        tableInt.clear();
-        tableInt.sendKeys(invalidEntry);
-        WebElement tableDecimal = driver.findElement(By.xpath("//textarea[@name='t-9-r-1-data[decimal]']"));
-        tableDecimal.clear();
-        tableDecimal.sendKeys(invalidEntry);
+        final String invalidEntry = "a";
+        WebDriver driver = getDriver();
+        ProjectUtils.reset(driver);
+        goFieldsPage();
 
-        WebElement saveButton = driver.findElement(By.xpath("//button[@id='pa-entity-form-save-btn']"));
-        ProjectUtils.click(driver, saveButton);
+        driver.findElement(createNewIcon).click();
+        getWait(10).until(ExpectedConditions.visibilityOfElementLocated(intInputField)).sendKeys(invalidEntry);
+        clickButton("save");
 
-        WebElement error = driver.findElement(By.xpath("//div[text()='Error saving entity']"));
-
+        WebElement error = getWait(2).until(ExpectedConditions.visibilityOfElementLocated(errorMessage));
         Assert.assertTrue(error.isDisplayed());
-    }
-
-    @Test
-    public void fieldInputNewRecordTest() {
-
-        final String title = "KyKy";
-        final String comments = "Good";
-        final int number = 555;
-        final double decimal = 555.33;
-
-        WebDriver driver = getDriver();
-
-        WebElement sideBarField = driver.findElement(By.xpath("//body/div[1]/div[1]/div[2]/ul[1]/li[4]/a[1]/p[1]"));
-        sideBarField.click();
-
-        WebElement buttonField = driver.findElement(By.xpath("//i[contains(text(),'create_new_folder')]"));
-        buttonField.click();
-
-        WebElement titleInput = driver.findElement(By.xpath("//input[@id='title']"));
-        titleInput.clear();
-        titleInput.sendKeys(title);
-
-        WebElement commentsInput = driver.findElement(By.xpath("//textarea[@id='comments']"));
-        commentsInput.clear();
-        commentsInput.sendKeys(comments);
-
-        WebElement numberInput = driver.findElement(By.xpath("//input[@id='int']"));
-        numberInput.clear();
-        numberInput.sendKeys(String.valueOf(number));
-
-        WebElement decimalInput = driver.findElement(By.xpath("//input[@id='decimal']"));
-        decimalInput.clear();
-        decimalInput.sendKeys(String.valueOf(decimal));
-
-        WebElement saveButton = driver.findElement(By.xpath("//button[@id='pa-entity-form-save-btn']"));
-        ProjectUtils.click(driver, saveButton);
-
-        Assert.assertEquals(driver.getCurrentUrl(),"https://ref.eteam.work/index.php?action=action_list&entity_id=5&filter");
-    }
-
-    @Test(dependsOnMethods = "fieldInputNewRecordTest")
-    public void fieldsEditTest() throws InterruptedException {
-
-        final String newTitle = "Ky";
-        final String newComments = "Goooood";
-        final int newInt = 222;
-        final double newDecimal = 222.33;
-
-        WebDriver driver = getDriver();
-
-        WebElement sideBarField = driver.findElement(By.xpath("//body/div[1]/div[1]/div[2]/ul[1]/li[4]/a[1]/p[1]"));
-        sideBarField.click();
-
-        WebElement createdRecordSandwich = getWait(5)
-                .until(ExpectedConditions.elementToBeClickable(By.xpath("//table//button[@aria-expanded='false']")));
-        ProjectUtils.click(driver, createdRecordSandwich);
-        Thread.sleep(500);
-
-        WebElement editField = getWait(5)
-                .until(ExpectedConditions.presenceOfElementLocated(By.xpath("//button[@aria-expanded='true']/..//a[text() = 'edit']")));
-        editField.click();
-
-        WebElement titleField = getWait(5)
-                .until(ExpectedConditions.presenceOfElementLocated(By.xpath("//input[@id='title']")));
-        titleField.clear();
-        titleField.sendKeys(newTitle);
-
-        WebElement commentsField = driver.findElement(By.xpath("//textarea[@id='comments']"));
-        commentsField.clear();
-        commentsField.sendKeys(newComments);
-
-        WebElement intField = driver.findElement(By.xpath("//input[@id='int']"));
-        intField .clear();
-        intField .sendKeys(String.valueOf(newInt));
-
-        WebElement decimalField = driver.findElement(By.xpath("//input[@id='decimal']"));
-        decimalField.clear();
-        decimalField.sendKeys(String.valueOf(newDecimal));
-
-        WebElement saveButton = driver.findElement(By.xpath("//button[@id='pa-entity-form-save-btn']"));
-        ProjectUtils.click(driver, saveButton);
-
-        Assert.assertEquals(driver.getCurrentUrl(),
-                "https://ref.eteam.work/index.php?action=action_list&entity_id=5&filter");
+        Assert.assertEquals(error.getText(), "Error saving entity");
     }
 }

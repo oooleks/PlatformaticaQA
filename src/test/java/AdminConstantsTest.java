@@ -13,6 +13,9 @@ import java.util.concurrent.TimeUnit;
 @Profile(profile = ProfileType.ADMIN)
 public class AdminConstantsTest extends BaseTest {
 
+    private static final By COMPANY_NAME = By.xpath("//td[contains(text(),'Company Name')]");
+    private static final By COMPANY_EMAIL = By.xpath("//td[contains(text(),'Company Email')]");
+
     private WebDriverWait getWait(int timeoutSecond) {
         return new WebDriverWait(getDriver(), timeoutSecond);
     }
@@ -22,7 +25,7 @@ public class AdminConstantsTest extends BaseTest {
     }
 
     private WebElement getCompany(String value) {
-        By company_name_loc = By.xpath("//td[text()='Company " + value + "']/following-sibling::td/child::input[@type='text']");
+        By company_name_loc = By.xpath("//td[contains(text(),'Company " + value + "')]/following-sibling::td/child::input[@type='text']");
         return getWait(2).until(ExpectedConditions.visibilityOfElementLocated(company_name_loc));
     }
 
@@ -30,11 +33,11 @@ public class AdminConstantsTest extends BaseTest {
         getWait(2).until(ExpectedConditions.visibilityOfElementLocated
                 (By.xpath("//a[@id='navbarDropdownProfile']"))).click();
         getWait(2).until(ExpectedConditions.visibilityOfElementLocated
-                (By.xpath("//a[text()='Configuration']"))).click();
+                (By.xpath("//a[contains(text(),'Configuration')]"))).click();
         getWait(2).until(ExpectedConditions.visibilityOfElementLocated
-                (By.xpath("//i[text()='miscellaneous_services']/parent::a"))).click();
+                (By.xpath("//i[contains(text(),'miscellaneous_services')]/parent::a"))).click();
         getWait(2).until(ExpectedConditions.elementToBeClickable
-                (By.xpath("//span[text()='List constants']"))).click();
+                (By.xpath("//span[contains(text(),'List constants')]"))).click();
         getWait(2).until(ExpectedConditions.visibilityOfElementLocated
                 (By.xpath("//div[contains(@class,'card-body')]")));
     }
@@ -56,10 +59,10 @@ public class AdminConstantsTest extends BaseTest {
         driver.manage().timeouts().implicitlyWait(1, TimeUnit.SECONDS);
 
         goToConstantsList();
-        if (driver.findElements(By.xpath("//td[text()='Company Name']")).size() != 0) {
+        if (driver.findElements(COMPANY_NAME).size() != 0) {
             commandInCMD(driver, "delete constant \"Company Name\"");
         }
-        if (driver.findElements(By.xpath("//td[text()='Company Email']")).size() != 0) {
+        if (driver.findElements(COMPANY_EMAIL).size() != 0) {
             commandInCMD(driver, "delete constant \"Company Email\"");
         }
         String company_name_1 = getRandomText();
@@ -79,7 +82,7 @@ public class AdminConstantsTest extends BaseTest {
 
         commandInCMD(driver, "delete constant \"Company Name\"");
         commandInCMD(driver, "delete constant \"Company Email\"");
-        Assert.assertTrue(driver.findElements(By.xpath("//td[text()='Company Name']")).size() == 0);
-        Assert.assertTrue(driver.findElements(By.xpath("//td[text()='Company Email']")).size() == 0);
+        Assert.assertTrue(driver.findElements(COMPANY_NAME).size() == 0);
+        Assert.assertTrue(driver.findElements(COMPANY_EMAIL).size() == 0);
     }
 }

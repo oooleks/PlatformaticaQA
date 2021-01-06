@@ -2,7 +2,6 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import runner.BaseTest;
@@ -13,11 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 public class EntityPlatformFunctionsTest extends BaseTest {
 
-    private WebDriverWait getWait(int timeoutSecond) {
-        return new WebDriverWait(getDriver(), timeoutSecond);
-    }
-
-    private static final By actions_button = By.xpath("//tr[@data-index='0']/td/div/button");
+    private static final By ACTIONS_BUTTON = By.xpath("//tr[@data-index='0']/td/div/button");
 
     private String[] getNewEditValues(WebDriver driver) {
         String[] values = new String[3];
@@ -34,14 +29,14 @@ public class EntityPlatformFunctionsTest extends BaseTest {
         WebElement platform_functions = driver.findElement(By.xpath("//p[contains(text(),'Platform functions')]"));
         ProjectUtils.click(driver, platform_functions);
         if (mode.equals("new")){
-            getWait(1).until(ExpectedConditions.visibilityOfElementLocated
+            getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated
                     (By.xpath("//i[text()='create_new_folder']"))).click();
             return getNewEditValues(driver);
         } else if (mode.equals("view")) {
             String[] record_values = new String[3];
-            getWait(1).until(ExpectedConditions.visibilityOfElementLocated
+            getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated
                     (By.xpath("//tr[@data-index='1']/td/div/button"))).click();
-            getWait(1).until(ExpectedConditions.visibilityOfElementLocated(By.linkText(mode))).click();
+            getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated(By.linkText(mode))).click();
             List<WebElement> record_elements = driver.findElements
                     (By.xpath("//label[contains(text(),'Last')]/following-sibling::div//span|//label[text()='Constant']/following-sibling::div//span"));
             for (int i = 0; i < record_values.length; i++) {
@@ -49,9 +44,9 @@ public class EntityPlatformFunctionsTest extends BaseTest {
             }
             return record_values;
         } else {
-            getWait(1).until(ExpectedConditions.visibilityOfElementLocated
+            getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated
                     (By.xpath("//tr[@data-index='1']/td/div/button"))).click();
-            getWait(1).until(ExpectedConditions.visibilityOfElementLocated(By.linkText(mode))).click();
+            getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated(By.linkText(mode))).click();
             return getNewEditValues(driver);
         }
     }
@@ -84,7 +79,7 @@ public class EntityPlatformFunctionsTest extends BaseTest {
         assertRecordValues(edit_record_values,first_record_values,"new");
 
         for (int i = 1; i < 3; i++) {
-            getWait(1).until(ExpectedConditions.visibilityOfElementLocated(actions_button)).click();
+            getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated(ACTIONS_BUTTON)).click();
             driver.findElement(By.linkText("delete")).click();
         }
         Assert.assertTrue(driver.findElements(By.xpath("//tr[@data-index]")).size() == 0);

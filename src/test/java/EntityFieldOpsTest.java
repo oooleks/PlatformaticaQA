@@ -1,7 +1,4 @@
-import org.openqa.selenium.By;
-import org.openqa.selenium.TimeoutException;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
@@ -11,22 +8,184 @@ import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import runner.BaseTest;
 import runner.ProjectUtils;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 public class EntityFieldOpsTest extends BaseTest {
 
-    @Test
-    public void newRecord() throws InterruptedException {
-        WebDriver driver = getDriver();
-        ProjectUtils.loginProcedure(driver);
-        driver.get("https://ref.eteam.work");
+    private final String DEFAULT_DROPDOWN = "Pending";
+    private final String OPTIONAL_DROPDOWN = "Done";
+    private final String REFERENCE_1 = UUID.randomUUID().toString();
+    private final String REFERENCE_2 = UUID.randomUUID().toString();
+    private final String REFERENCE_3 = UUID.randomUUID().toString();
+    private final String REFERENCE_CONSTANT = "contact@company.com";
 
-        WebElement tab = driver.findElement(By.xpath("//p[contains(text(),'Fields Ops')]"));
-        tab.click();
+    private final By rows = By.xpath("//tbody/tr");
+    private final By createNew = By.xpath("//div[@class='card-icon']/i");
+    private final By saveButton = By.cssSelector("button[id*='save']");
+    private final By createReferenceLabelInput = By.cssSelector("input[name*=label]");
+    private final By createReferenceFilter1Input = By.cssSelector("input[name*=filter_1]");
+    private final By createReferenceFilter2Input = By.cssSelector("input[name*=filter_2]");
+    private final By createEditMainToggle = By.cssSelector("div#_field_container-switch span.toggle");
+    private final By createEditDropdownSelect = By.id("dropdown");
+    private final By createEditReferenceSelect = By.id("reference");
+    private final By fieldsOpsRecordCard = By.cssSelector("div.card");
+    private final By viewSwitchValue = By.xpath("//label[text()='Switch']/../div[1]//span");
+    private final By viewDropdownValue = By.xpath("//label[text()='Switch']/../div[2]//span");
+    private final By viewReferenceValue = By.xpath("//label[text()='Reference']/following-sibling::p");
+    private final By viewMultiReferenceValue = By.xpath("//label[text()='Multireference']/following-sibling::p");
+    private final By viewReferenceWithFilterValue = By.xpath("//label[text()='Reference with filter']/following-sibling::p");
+
+    private WebDriverWait getWait(int timeoutSecond) {
+        return new WebDriverWait(getDriver(), timeoutSecond);
+    }
+
+    private boolean isVisible(By by) {
+        getDriver().manage().timeouts().implicitlyWait(0, TimeUnit.SECONDS);
+        List<WebElement> list = getDriver().findElements(by);
+        getDriver().manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+        if (list.isEmpty()) {
+            return false;
+        } else {
+            return list.get(0).isDisplayed();
+        }
+    }
+
+    private boolean isInViewport(WebElement element) {
+        Dimension portViewSize = getDriver().findElement(By.tagName("body")).getSize();
+        Dimension elementSize = element.getSize();
+        Point elementLocation = element.getLocation();
+        boolean inViewportByHeight = portViewSize.getHeight() > elementLocation.getY() + elementSize.getHeight();
+        boolean inViewportByWidth = portViewSize.getWidth() > elementLocation.getX() + elementSize.getWidth();
+
+        return inViewportByHeight && inViewportByWidth;
+    }
+
+    private void goPageByName(String name) {
+        WebDriver driver = getDriver();
+        ProjectUtils.click(driver, driver.findElement(By.xpath(String.format("//p[contains(text(), ' %s ')]/..", name))));
+    }
+
+    private void clickSaveButton() {
+        WebElement button = getDriver().findElement(saveButton);
+        if (!isInViewport(button)) {
+            scrollToElement(button);
+        }
+        button.click();
+    }
+
+    private void createReference(String label) {
+        WebDriver driver = getDriver();
+        goPageByName("Reference values");
+        driver.findElement(createNew).click();
+        driver.findElement(createReferenceLabelInput).sendKeys(label);
+        clickSaveButton();
+    }
+
+    private void createReference(String label, String filterOne) {
+        WebDriver driver = getDriver();
+        goPageByName("Reference values");
+        driver.findElement(createNew).click();
+        driver.findElement(createReferenceLabelInput).sendKeys(label);
+        driver.findElement(createReferenceFilter1Input).sendKeys(filterOne);
+        clickSaveButton();
+    }
+
+    private void createReference(String label, String filterOne, String filterTwo) {
+        WebDriver driver = getDriver();
+        goPageByName("Reference values");
+        driver.findElement(createNew).click();
+        driver.findElement(createReferenceLabelInput).sendKeys(label);
+        driver.findElement(createReferenceFilter1Input).sendKeys(filterOne);
+        driver.findElement(createReferenceFilter2Input).sendKeys(filterTwo);
+        clickSaveButton();
+    }
+
+    private void clickSandwichAction(WebElement row, String menuItem) throws InterruptedException {
+        row.findElement(By.tagName("button")).click();
+        Thread.sleep(500);
+        row.findElement(By.xpath(String.format("//li/a[contains(@href, '%s')]", menuItem.toLowerCase()))).click();
+    }
+
+    private String getRecordTypeIcon() {
+        JavascriptExecutor executor = (JavascriptExecutor)getDriver();
+        String script = "return window.getComputedStyle(document.querySelector('i.fa'),'::before').getPropertyValue('content')";
+        String recordTypeIcon = executor.executeScript(script).toString().replace("\"", "");
+
+        return recordTypeIcon;
+    }
+
+    private String getViewMultiReference() {
+        StringBuilder viewlMultiReference = new StringBuilder();
+        for (WebElement element : getDriver().findElements(viewMultiReferenceValue)) {
+            viewlMultiReference.append(String.format(" %s", element.getText()));
+        }
+        String result = viewlMultiReference.toString().trim().replace(" ", ", ");
+
+        return result;
+    }
+
+    private String getViewReferenceConstant() {
+        String viewReferenceConstant;
+        String[] cardText = getDriver().findElement(fieldsOpsRecordCard).getText()
+                .split("EmbedFO")[0].split("\n");
+        viewReferenceConstant = cardText[cardText.length - 1];
+
+        return viewReferenceConstant;
+    }
+
+    private int getNumberOfRecords() {
+        int numOfRecords;
+        try {
+            By rowsInfo = By.xpath("//span[@class='pagination-info']");
+            numOfRecords = Integer.parseInt(getWait(1).until(ExpectedConditions
+                    .visibilityOfElementLocated(rowsInfo)).getText().split("of ")[1].split(" ")[0]);
+        } catch (TimeoutException e) {
+            numOfRecords = 0;
+        }
+
+        return numOfRecords;
+    }
+
+    private String getCreatedReferenceValue() {
+        String lastRecordRowXpath = "//tbody/tr[last()]/td[2]/a";
+
+        WebElement refValueId = getDriver().findElement(By.xpath(lastRecordRowXpath));
+        String href = refValueId.getAttribute("href");
+        return href.substring(href.lastIndexOf('=') + 1);
+    }
+
+    private void scrollToElement(WebElement element) {
+        Actions actions = new Actions(getDriver());
+        actions.moveToElement(element);
+        actions.perform();
+    }
+
+    private String createReferenceValue(String referenceValue) {
+        goPageByName("Reference values");
+        getDriver().findElement(By.xpath("//i[contains(text(),'create_new_folder')]")).click();
+        WebElement labelInput = getDriver().findElement(By.xpath("//input[@id='label']"));
+        labelInput.sendKeys(referenceValue);
+        WebElement saveButton = getDriver().findElement(By.xpath("//button[@id='pa-entity-form-save-btn']"));
+        ProjectUtils.click(getDriver(), saveButton);
+        return getCreatedReferenceValue();
+    }
+
+    private void createFieldOpsToDelete(String referenceValue) {
+        goPageByName("Fields Ops");
+        getDriver().findElement(By.xpath("//i[contains(text(),'create_new_folder')]")).click();
+        WebElement referenceCheckBox = getWait(3).until(ExpectedConditions.visibilityOfElementLocated(By.xpath(String.format("//label[contains(text(), '%s')]", referenceValue))));
+        scrollToElement(referenceCheckBox);
+        referenceCheckBox.click();
+        WebElement saveButton = getDriver().findElement(By.xpath("//button[@id='pa-entity-form-save-btn']"));
+        ProjectUtils.click(getDriver(), saveButton);
+    }
+
+    @Test
+    public void createNewRecordTest() {
+        WebDriver driver = getDriver();
+        goPageByName("Fields Ops");
 
         WebElement createNewFolder = driver.findElement(By.xpath("//i[contains(text(),'create_new_folder')]"));
         createNewFolder.click();
@@ -38,7 +197,7 @@ public class EntityFieldOpsTest extends BaseTest {
         dropdownMenu.selectByValue("Done");
 
         WebElement saveBtn = driver.findElement(By.id("pa-entity-form-save-btn"));
-        ProjectUtils.click(driver,saveBtn);
+        ProjectUtils.click(driver, saveBtn);
 
         try {
             WebElement pageTitle = driver.findElement(By.className("card-title"));
@@ -49,256 +208,200 @@ public class EntityFieldOpsTest extends BaseTest {
         }
     }
 
+    @Test
+    public void viewBaseRecordNoRefExistTest() throws InterruptedException {
+
+        final String SWITCH_VALUE = "0";
+        final String REFERENCE = "";
+        final String MULTI_REFERENCE = "";
+        final String REFERENCE_WITH_FILTER = "";
+        String[] values = {null, SWITCH_VALUE, DEFAULT_DROPDOWN, REFERENCE, MULTI_REFERENCE, REFERENCE_WITH_FILTER,
+                REFERENCE_CONSTANT, null};
+
+        WebDriver driver = getDriver();
+
+        goPageByName("Fields Ops");
+        driver.findElement(createNew).click();
+        clickSaveButton();
+
+        Assert.assertEquals(driver.findElements(rows).size(), 1);
+        WebElement row = driver.findElement(rows);
+        List<WebElement> cols = row.findElements(By.tagName("td"));
+        Assert.assertEquals(cols.size(), values.length);
+        for (int i = 0; i < values.length; i++) {
+            if (values[i] != null) {
+                Assert.assertEquals(cols.get(i).getText(), values[i]);
+            }
+        }
+        Assert.assertEquals(getRecordTypeIcon(), "");
+
+        clickSandwichAction(driver.findElement(rows), "view");
+        Assert.assertEquals(driver.findElement(viewSwitchValue).getText(), SWITCH_VALUE);
+        Assert.assertEquals(driver.findElement(viewDropdownValue).getText(), DEFAULT_DROPDOWN);
+        Assert.assertEquals(getViewReferenceConstant(), REFERENCE_CONSTANT);
+        Assert.assertFalse(isVisible(viewReferenceValue));
+        Assert.assertFalse(isVisible(viewMultiReferenceValue));
+        Assert.assertFalse(isVisible(viewReferenceWithFilterValue));
+        Assert.assertFalse(isVisible(rows));
+    }
+
     @Ignore
     @Test
-    public void fieldOpsView() {
+    public void viewBaseRecordRefExistTest() throws InterruptedException {
+
+        final String SWITCH_VALUE = "0";
+        final String reference = "";
+        final String multiReference = "";
+        final String referenceWithFilter = "";
+        String[] values = {null, SWITCH_VALUE, DEFAULT_DROPDOWN, reference, multiReference, referenceWithFilter,
+                REFERENCE_CONSTANT, null};
 
         WebDriver driver = getDriver();
-        setup();
 
-        int numOfPreexistingRecords = getNumberOfRecords();
+        createReference(REFERENCE_1);
+        createReference(REFERENCE_2, REFERENCE_1);
+        createReference(REFERENCE_3, REFERENCE_2, REFERENCE_1);
 
-        By createNew = By.xpath("//div[@class='card-icon']/i");
-        By upperToggle = By.xpath("//div[@class='d-flex']//span");
-        By dropDown = By.cssSelector("select#dropdown");
-        By refSelect = By.cssSelector("select#reference");
-        By firstRefLabel = By.xpath("//input[@id='multireference-1']/..");
-        By secondRefLabel = By.xpath("//input[@id='multireference-2']/..");
-        By refFilterSelect = By.cssSelector("select#reference_with_filter");
-        By refConstant = By.cssSelector("span[class$='filled'] > input[id$='reference_constant']");
-        By embedFoAddButton = By.cssSelector("td > button");
-        By saveButton = By.cssSelector("button[id*='save']");
-
-        String lastRecordXpath = "//tbody/tr[last()]";
-        By recordCheckbox = By.xpath(String.format("%s/td/i[@class='fa fa-check-square-o']", lastRecordXpath));
-        By switchValue = By.xpath(String.format("%s/td[2]", lastRecordXpath));
-        By dropdownValue = By.xpath(String.format("%s/td[3]", lastRecordXpath));
-        By referenceValue = By.xpath(String.format("%s/td[4]", lastRecordXpath));
-        By multiReferenceValue = By.xpath(String.format("%s/td[5]", lastRecordXpath));
-        By referenceWithFilterValue = By.xpath(String.format("%s/td[6]", lastRecordXpath));
-        By referenceConstantValue = By.xpath(String.format("%s/td[7]", lastRecordXpath));
-
-        By recordViewReference = By.xpath("//label[text()='Reference']/following-sibling::p");
-        By recordViewMultireferences = By.xpath("//label[text()='Multireference']/following-sibling::p");
-        By recordViewRefWithFilterValue = By.xpath("//label[text()='Reference with filter']/following-sibling::p");
-
-        By embedFoTableData = By.cssSelector("tbody td");
-
-        driver.findElement(createNew).click();
-        driver.findElement(upperToggle).click();
-        final String mainDropdown = "Done";
-        new Select(driver.findElement(dropDown)).selectByValue(mainDropdown);
-        String mainReference = driver.findElement(By.cssSelector("select#reference option[value='1']")).getText();
-        new Select(driver.findElement(refSelect)).selectByVisibleText(mainReference);
-        WebElement firstReferenceLabel = driver.findElement(firstRefLabel);
-        String multiRefOne = firstReferenceLabel.getText();
-        firstReferenceLabel.click();
-        WebElement secondReferenceLabel = driver.findElement(secondRefLabel);
-        String multiRefTwo = secondReferenceLabel.getText();
-        secondReferenceLabel.click();
-        String referenceWithFilter = driver.findElement(By.cssSelector(
-                "select#reference_with_filter option:nth-of-type(2)")).getText();
-        new Select(driver.findElement(refFilterSelect)).selectByVisibleText(referenceWithFilter);
-        String referenceConstant = driver.findElement(refConstant).getAttribute("value");
-        driver.findElement(embedFoAddButton).click();
-        driver.findElement(saveButton).click();
-
-        try {
-            By pageTitle = By.cssSelector("h3");
-            Assert.assertEquals(driver.findElement(pageTitle).getText(), "Fields Ops",
-                    "Redirection to wrong page after saving new Fields Ops record");
-        } catch (TimeoutException e) {
-            Assert.fail("Redirection to wrong page after saving new Fields Ops record");
-        }
-
-        int numOfRecords = getNumberOfRecords();
-        if (numOfRecords == numOfPreexistingRecords) {
-            Assert.fail("Number of records didn't change after creating new Fields Ops record");
-        } else if (numOfRecords != numOfPreexistingRecords + 1) {
-            String errorMessage = String.format(
-                    "Number of records changed by %s after creating one new Fields Ops record",
-                    (numOfRecords - numOfPreexistingRecords));
-            Assert.fail(errorMessage);
-        }
-
-        getPaginationLastPage();
-
-        try {
-            driver.findElement(recordCheckbox);
-        } catch (TimeoutException e) {
-            Assert.fail("Checkbox not found for new Fields Ops record");
-        }
-        Assert.assertEquals(driver.findElement(switchValue).getText(), "1",
-                "Wrong Switch value for new Fields Ops record");
-        Assert.assertEquals(driver.findElement(dropdownValue).getText(), mainDropdown,
-                "Wrong Switch value for new Fields Ops record");
-        Assert.assertEquals(driver.findElement(referenceValue).getText(), mainReference,
-                "Wrong Reference value for new Fields Ops record");
-        Assert.assertEquals(driver.findElement(multiReferenceValue).getText(),
-                String.format("%s, %s", multiRefOne, multiRefTwo),
-                "Wrong Multireference value for new Fields Ops record");
-        Assert.assertEquals(driver.findElement(referenceWithFilterValue).getText(), referenceWithFilter,
-                "Wrong Reference with filter value for new Fields Ops record");
-        Assert.assertEquals(driver.findElement(referenceConstantValue).getText(), referenceConstant,
-                "Wrong Multireference value for new Fields Ops record");
-
-        driver.findElement(dropdownValue).click();
-
-        try {
-            By pageTitle = By.cssSelector("h4");
-            Assert.assertEquals(driver.findElement(pageTitle).getText(), "Fields Ops",
-                    "Redirection to wrong page, expected individual Fields Ops page");
-        } catch (TimeoutException e) {
-            Assert.fail("Redirection to wrong page, expected individual Fields Ops page");
-        }
-
-        String recordViewSwitchValue = driver.findElements(By.cssSelector("span.pa-view-field")).get(0).getText();
-        String recordViewDropdownValue = driver.findElements(By.cssSelector("span.pa-view-field")).get(1).getText();
-        List<String> recordViewMultireference = new ArrayList<>();
-        for (WebElement reference : driver.findElements(recordViewMultireferences)) {
-            recordViewMultireference.add(reference.getText());
-        }
-        String[] cardText = driver.findElement(By.cssSelector("div.card")).getText()
-                .split("EmbedFO")[0].split("\n");
-        String recordViewReferenceConstant = cardText[cardText.length - 1];
-
-        List<WebElement> embedFoTableDataLstWe = driver.findElements(embedFoTableData);
-        String embedFoNumberValue = embedFoTableDataLstWe.get(0).getText();
-        String embedFoSwitchValue = embedFoTableDataLstWe.get(1).getText();
-        String embedFoDropdownValue = embedFoTableDataLstWe.get(2).getText();
-        String embedFoReferenceValue = embedFoTableDataLstWe.get(3).getText();
-        String embedFoReferenceWithfilterValue = embedFoTableDataLstWe.get(4).getText();
-        String embedFoReferenceConstantValue = embedFoTableDataLstWe.get(5).getText();
-        String embedFoMultireferenceValue = embedFoTableDataLstWe.get(6).getText();
-
-        Assert.assertEquals(recordViewSwitchValue, "1");
-        Assert.assertEquals(recordViewDropdownValue, mainDropdown);
-        Assert.assertEquals(driver.findElement(recordViewReference).getText(), mainReference);
-        Assert.assertEquals(recordViewMultireference, new ArrayList<>(Arrays.asList(multiRefOne, multiRefTwo)));
-        Assert.assertEquals(driver.findElement(recordViewRefWithFilterValue).getText(), referenceWithFilter);
-        Assert.assertEquals(recordViewReferenceConstant, referenceConstant);
-        Assert.assertEquals(embedFoNumberValue, "1");
-        Assert.assertEquals(embedFoSwitchValue, "");
-        Assert.assertEquals(embedFoDropdownValue, "Plan");
-        Assert.assertEquals(embedFoReferenceValue, "First reference");
-        Assert.assertEquals(embedFoReferenceWithfilterValue, "Third reference");
-        Assert.assertEquals(embedFoReferenceConstantValue, referenceConstant);
-        Assert.assertEquals(embedFoMultireferenceValue, "");
-
-        driver.navigate().back();
-        getPaginationLastPage();
-        deleteLastRecord();
-    }
-
-    private WebDriverWait getWait(int timeoutSecond) {
-        return new WebDriverWait(getDriver(), timeoutSecond);
-    }
-
-    private void setup() {
-        ProjectUtils.loginProcedure(getDriver());
         goPageByName("Fields Ops");
-    }
+        driver.findElement(createNew).click();
+        clickSaveButton();
 
-    public void goPageByName(String name) {
-        WebElement iconElement = getDriver().findElement(By.xpath(String.format("//p[contains(text(), ' %s ')]/..", name)));
-
-        if (!iconElement.isDisplayed()) {
-            scrollToElement(iconElement);
+        Assert.assertEquals(driver.findElements(rows).size(), 1);
+        WebElement row = driver.findElement(rows);
+        List<WebElement> cols = row.findElements(By.tagName("td"));
+        Assert.assertEquals(cols.size(), values.length);
+        for (int i = 0; i < values.length; i++) {
+            if (values[i] != null) {
+                Assert.assertEquals(cols.get(i).getText(), values[i]);
+            }
         }
-        iconElement.click();
+        Assert.assertEquals(getRecordTypeIcon(), "");
+
+        clickSandwichAction(driver.findElement(rows), "view");
+        Assert.assertEquals(driver.findElement(viewSwitchValue).getText(), SWITCH_VALUE);
+        Assert.assertEquals(driver.findElement(viewDropdownValue).getText(), DEFAULT_DROPDOWN);
+        Assert.assertEquals(getViewReferenceConstant(), REFERENCE_CONSTANT);
+        Assert.assertFalse(isVisible(viewReferenceValue));
+        Assert.assertFalse(isVisible(viewMultiReferenceValue));
+        Assert.assertFalse(isVisible(viewReferenceWithFilterValue));
+        Assert.assertFalse(isVisible(rows));
     }
 
-    private int getNumberOfRecords() {
-        int numOfRecords;
-        try {
-            By rowsInfo = By.xpath("//span[@class='pagination-info']");
-            numOfRecords = Integer.parseInt(getWait(1).until(ExpectedConditions
-                    .visibilityOfElementLocated(rowsInfo)).getText().split("of ")[1].split(" ")[0]);
-        } catch (TimeoutException e) {
-            numOfRecords = 0;
+    @Ignore
+    @Test
+    public void viewRecordWithRefTest() throws InterruptedException {
 
-        }
+        final String SWITCH_VALUE = "1";
+        final String REFERENCE = REFERENCE_1;
+        final String MULTI_REFERENCE = "";
+        final String REFERENCE_WITH_FILTER = "";
+        String[] values = {null, SWITCH_VALUE, OPTIONAL_DROPDOWN, REFERENCE, MULTI_REFERENCE, REFERENCE_WITH_FILTER,
+                REFERENCE_CONSTANT, null};
 
-        return numOfRecords;
-    }
-
-    private void getPaginationLastPage() {
-        if (getNumberOfRecords() > 10) {
-            List<WebElement> paginationButtons = getDriver().findElements(By.cssSelector("a.page-link"));
-            paginationButtons.get(paginationButtons.size() - 2).click();
-        }
-    }
-
-    private void deleteLastRecord() {
         WebDriver driver = getDriver();
-        String lastRecordRowXpath = "//tbody/tr[last()]";
-        By recordMenuButton = By.xpath(String.format("%s//button", lastRecordRowXpath));
-        By deleteButton = By.xpath(String.format("%s//a[contains(@href, 'delete')]", lastRecordRowXpath));
-        driver.findElement(recordMenuButton).click();
-        ProjectUtils.click(driver, getWait(2).until(ExpectedConditions.elementToBeClickable(deleteButton)));
+
+        createReference(REFERENCE_1);
+        createReference(REFERENCE_2, REFERENCE_1);
+        createReference(REFERENCE_3, REFERENCE_2, REFERENCE_1);
+
+        goPageByName("Fields Ops");
+        driver.findElement(createNew).click();
+        driver.findElement(createEditMainToggle).click();
+        new Select(driver.findElement(createEditDropdownSelect)).selectByVisibleText(OPTIONAL_DROPDOWN);
+        new Select(driver.findElement(createEditReferenceSelect)).selectByVisibleText(REFERENCE);
+        clickSaveButton();
+
+        Assert.assertEquals(driver.findElements(rows).size(), 1);
+        WebElement row = driver.findElement(rows);
+        List<WebElement> cols = row.findElements(By.tagName("td"));
+        Assert.assertEquals(cols.size(), values.length);
+        for (int i = 0; i < values.length; i++) {
+            if (values[i] != null) {
+                Assert.assertEquals(cols.get(i).getText(), values[i]);
+            }
+        }
+        Assert.assertEquals(getRecordTypeIcon(), "");
+
+        clickSandwichAction(driver.findElement(rows), "view");
+        Assert.assertEquals(driver.findElement(viewSwitchValue).getText(), SWITCH_VALUE);
+        Assert.assertEquals(driver.findElement(viewDropdownValue).getText(), OPTIONAL_DROPDOWN);
+        Assert.assertEquals(driver.findElement(viewReferenceValue).getText(), REFERENCE);
+        Assert.assertEquals(getViewReferenceConstant(), REFERENCE_CONSTANT);
+        Assert.assertFalse(isVisible(viewMultiReferenceValue));
+        Assert.assertFalse(isVisible(viewReferenceWithFilterValue));
+        Assert.assertFalse(isVisible(rows));
     }
 
+    @Ignore
+    @Test
+    public void viewRecordWithRefMultiRefTest() throws InterruptedException {
+
+        final String SWITCH_VALUE = "1";
+        final String REFERENCE = REFERENCE_1;
+        final String MULTI_REFERENCE = String.format("%s, %s", REFERENCE_1, REFERENCE_2);
+        final String REFERENCE_WITH_FILTER = "";
+        String[] values = {null, SWITCH_VALUE, OPTIONAL_DROPDOWN, REFERENCE, MULTI_REFERENCE, REFERENCE_WITH_FILTER,
+                REFERENCE_CONSTANT, null};
+
+        WebDriver driver = getDriver();
+
+        createReference(REFERENCE_1);
+        createReference(REFERENCE_2, REFERENCE_1);
+        createReference(REFERENCE_3, REFERENCE_2, REFERENCE_1);
+
+        goPageByName("Fields Ops");
+        driver.findElement(createNew).click();
+        driver.findElement(createEditMainToggle).click();
+        new Select(driver.findElement(createEditDropdownSelect)).selectByVisibleText(OPTIONAL_DROPDOWN);
+        new Select(driver.findElement(createEditReferenceSelect)).selectByVisibleText(REFERENCE);
+        for (String ref : MULTI_REFERENCE.split(", ")) {
+            driver.findElement(By.xpath(String.format("//label[contains(text(), '%s')]/span", ref))).click();
+        }
+        clickSaveButton();
+
+        Assert.assertEquals(driver.findElements(rows).size(), 1);
+        WebElement row = driver.findElement(rows);
+        List<WebElement> cols = row.findElements(By.tagName("td"));
+        Assert.assertEquals(cols.size(), values.length);
+        for (int i = 0; i < values.length; i++) {
+            if (values[i] != null) {
+                Assert.assertEquals(cols.get(i).getText(), values[i]);
+            }
+        }
+        Assert.assertEquals(getRecordTypeIcon(), "");
+
+        clickSandwichAction(driver.findElement(rows), "view");
+        Assert.assertEquals(driver.findElement(viewSwitchValue).getText(), SWITCH_VALUE);
+        Assert.assertEquals(driver.findElement(viewDropdownValue).getText(), OPTIONAL_DROPDOWN);
+        Assert.assertEquals(driver.findElement(viewReferenceValue).getText(), REFERENCE);
+        Assert.assertEquals(getViewMultiReference(), MULTI_REFERENCE);
+        Assert.assertFalse(isVisible(viewReferenceWithFilterValue));
+        Assert.assertEquals(getViewReferenceConstant(), REFERENCE_CONSTANT);
+        Assert.assertFalse(isVisible(rows));
+    }
 
     @Test
-    @Ignore("https://trello.com/c/dG6yE2lf/35-fields-ops-deleted-record-isnt-present-in-the-recycle-bin")
     public void fieldOpsDeleteTest() throws InterruptedException {
-        String referenceValue = "Delete Reference";
-
-        setup();
-
-        createReferenceValue(referenceValue);
-
-        createFieldOpsToDelete(referenceValue);
+        String referenceValue = UUID.randomUUID().toString();
+        String refValueId = createReferenceValue(referenceValue);
         createFieldOpsToDelete(referenceValue);
 
         goPageByName("Fields Ops");
 
-        WebElement searchInput = getDriver().findElement(By.xpath("//input[@placeholder='Search']"));
-        searchInput.sendKeys("Delete Reference");
         int beforeCountOfRecords = getNumberOfRecords();
-        Thread.sleep(3000);
-        WebElement dropDown = getDriver().findElement(By.xpath("//td[contains(text(), 'Delete Reference')]/../td/div/button"));
+        By dropdownMenu = By.xpath("//td[contains(text(), '" + referenceValue + "' )]/../td/div/button");
+        WebElement dropDown = getWait(3).until(ExpectedConditions.elementToBeClickable(dropdownMenu));
         ProjectUtils.click(getDriver(), dropDown);
         WebElement deleteMenuItem = getDriver().findElement(By.cssSelector("ul.dropdown-menu.show li:nth-child(3) > a"));
         ProjectUtils.click(getDriver(), deleteMenuItem);
-        Thread.sleep(5000);
-        goPageByName("Fields Ops");
-        getDriver().findElement(By.xpath("//input[@placeholder='Search']")).sendKeys("Delete Reference");
+
         int afterCountOfRecords = getNumberOfRecords();
         Assert.assertNotEquals(beforeCountOfRecords, afterCountOfRecords);
 
         WebElement notificationIcon = getDriver().findElement(By.xpath("//i[contains(text(),'delete_outline')]"));
         ProjectUtils.click(getDriver(), notificationIcon);
 
-        Thread.sleep(13000);
         WebElement firstRow = getDriver().findElement(By.xpath("//tbody/tr[1]/td[1]"));
-        Assert.assertTrue(firstRow.getText().contains("Delete Reference"));
-    }
-
-    private void scrollToElement(WebElement element) {
-        Actions actions = new Actions(getDriver());
-        actions.moveToElement(element);
-        actions.perform();
-    }
-
-    private void createReferenceValue(String referenceValue) {
-        goPageByName("Reference values");
-        getDriver().findElement(By.xpath("//i[contains(text(),'create_new_folder')]")).click();
-        WebElement labelInput = getDriver().findElement(By.xpath("//input[@id='label']"));
-        labelInput.sendKeys(referenceValue);
-        WebElement saveButton = getDriver().findElement(By.xpath("//button[@id='pa-entity-form-save-btn']"));
-        ProjectUtils.click(getDriver(), saveButton);
-    }
-
-    private void createFieldOpsToDelete(String referenceValue) throws InterruptedException {
-        goPageByName("Fields Ops");
-        getDriver().findElement(By.xpath("//i[contains(text(),'create_new_folder')]")).click();
-        Thread.sleep(5000);
-        WebElement deleteReferenceCheckBox = getDriver().findElement(By.xpath(String.format("//label[contains(text(), '%s')]", referenceValue)));
-        scrollToElement(deleteReferenceCheckBox);
-        deleteReferenceCheckBox.click();
-        WebElement saveButton = getDriver().findElement(By.xpath("//button[@id='pa-entity-form-save-btn']"));
-        scrollToElement(saveButton);
-        ProjectUtils.click(getDriver(), saveButton);
+        Assert.assertTrue(firstRow.getText().contains(refValueId));
     }
 }
