@@ -66,7 +66,6 @@ public class EntityPlatformFunctionsTest extends BaseTest {
     @Test
     public void platformFunctionsCreateTest() {
         WebDriver driver = getDriver();
-        driver.manage().timeouts().implicitlyWait(1, TimeUnit.SECONDS);
 
         String[] first_record_values = getRecordValues(driver,"new");
         String[] second_record_values = getRecordValues(driver, "new");
@@ -82,6 +81,10 @@ public class EntityPlatformFunctionsTest extends BaseTest {
             getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated(ACTIONS_BUTTON)).click();
             driver.findElement(By.linkText("delete")).click();
         }
-        Assert.assertTrue(driver.findElements(By.xpath("//tr[@data-index]")).size() == 0);
+
+        WebElement record_table = getWebDriverWait().until(ExpectedConditions.presenceOfElementLocated
+                (By.xpath("//div[contains(@class,'card-body')]")));
+        Assert.assertNotNull(record_table);
+        Assert.assertTrue(record_table.getText().isEmpty());
     }
 }

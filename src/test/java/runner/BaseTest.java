@@ -89,15 +89,16 @@ public abstract class  BaseTest {
     }
 
     private void quitBrowser() {
-        getDriver().quit();
+        driver.quit();
+        webDriverWait = null;
 
         LoggerUtils.log("Browser closed");
     }
 
     private void startTest(WebDriver driver, ProfileType profileType) {
-        driver.get(profileType.getUrl());
-        ProjectUtils.login(driver, profileType);
-        ProjectUtils.reset(driver);
+        profileType.get(driver);
+        profileType.login(driver);
+        profileType.reset(driver);
     }
 
     @BeforeClass
@@ -120,7 +121,7 @@ public abstract class  BaseTest {
             driver = createBrowser();
             startTest(driver, TestUtils.getProfileType(method, profileType));
         } else {
-            driver.get(profileType.getUrl());
+            profileType.get(driver);
         }
     }
 
@@ -145,12 +146,12 @@ public abstract class  BaseTest {
                 LoggerUtils.logYellow("Created directory to save screenshots: " + screenshotDirectoryName);
             }
 
-            ScreenshotUtils.takeScreenShot(getDriver(), String.format("%s%s%s.%s.png",
+            ScreenshotUtils.takeScreenShot(driver, String.format("%s%s%s.%s.png",
                     screenshotDirectoryName, File.separator, tr.getInstanceName(), tr.getName()));
         }
 
         if (runType == RunType.Single) {
-            quitBrowser();
+//            quitBrowser();
         }
 
         long executionTime = (tr.getEndMillis() - tr.getStartMillis()) / 1000;
@@ -161,7 +162,7 @@ public abstract class  BaseTest {
     @AfterClass
     protected void afterClass() {
         if (runType == RunType.Multiple) {
-            quitBrowser();
+//            quitBrowser();
         }
     }
 
