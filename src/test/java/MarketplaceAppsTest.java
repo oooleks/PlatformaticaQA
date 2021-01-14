@@ -24,7 +24,7 @@ public class MarketplaceAppsTest extends BaseTest {
               (By.xpath("//body"))).getText().equals("Unable to create instance");
     }
 
-    private final String[] getEntityValues() {
+    private String[] getEntityValues() {
         String name = RandomStringUtils.randomAlphanumeric(6, 10).toLowerCase();
         return new String[] {name, name, String.format("https://%s.eteam.work", name), "admin", "2", "1", "English"};
     }
@@ -39,15 +39,67 @@ public class MarketplaceAppsTest extends BaseTest {
     }
 
     @Test
-    public void newInstanceTest(ITestContext context) throws InterruptedException {
+    public void instanceCancelTest() throws InterruptedException {
         WebDriver driver = getDriver();
-
-        WebElement instance_table = getWebDriverWait().until(ExpectedConditions.presenceOfElementLocated
-                (By.xpath("//div[contains(@class,'card-body')]")));
-        Assert.assertTrue(instance_table.getText().isEmpty());
 
         getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated
                 (By.xpath("//i[contains(text(),'create_new_folder')]"))).click();
+        WebElement app_name = getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated
+                (By.xpath("//input[@id='name']")));
+        ProjectUtils.inputKeys(driver, app_name, getEntityValues()[0]);
+        driver.findElement(By.xpath("//button[contains(text(),'Cancel')]")).click();
+
+        WebElement constant_table = getWebDriverWait().until(ExpectedConditions.presenceOfElementLocated
+                (By.xpath("//div[contains(@class,'card-body')]")));
+        Assert.assertTrue(constant_table.getText().isEmpty());
+    }
+
+    @Test
+    public void instanceDraftTest() throws InterruptedException {
+        WebDriver driver = getDriver();
+
+        getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated
+                (By.xpath("//i[contains(text(),'create_new_folder')]"))).click();
+        WebElement app_name = getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated
+                (By.xpath("//input[@id='name']")));
+        String[] entity_values = getEntityValues();
+        ProjectUtils.inputKeys(driver, app_name, entity_values[0]);
+        driver.findElement(By.xpath("//button[@id='pa-entity-form-draft-btn']")).click();
+
+        assertInstanceValues(entity_values);
+        Assert.assertEquals(driver.findElement(By.xpath("//tr/td/i")).getAttribute("class"), "fa fa-pencil");
+
+        ProjectUtils.click(driver, driver.findElement(By.id("navbarDropdownProfile")));
+        ProjectUtils.click(driver, driver.findElement(By.xpath("//a[contains(text(), 'Reset')]")));
+
+        WebElement constant_table = getWebDriverWait().until(ExpectedConditions.presenceOfElementLocated
+                (By.xpath("//div[contains(@class,'card-body')]")));
+        Assert.assertTrue(constant_table.getText().isEmpty());
+    }
+
+    @Test
+    public void instanceCreateTest() throws InterruptedException {
+        WebDriver driver = getDriver();
+
+        getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated
+                (By.xpath("//i[contains(text(),'create_new_folder')]"))).click();
+        WebElement app_name = getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated
+                (By.xpath("//input[@id='name']")));
+        String[] entity_values = getEntityValues();
+        ProjectUtils.inputKeys(driver, app_name, entity_values[0]);
+        getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated
+                (By.xpath("//button[@id='pa-entity-form-save-btn']"))).click();
+
+        String congrats = getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated
+                (By.xpath("//div[contains(@class,'card-body')]//h3[1]"))).getText();
+        Assert.assertEquals(congrats, "Congratulations! Your instance was successfully created");
+
+        assertInstanceValues(entity_values);
+    }
+
+    @Test
+    public void instanceTest() throws InterruptedException {
+        WebDriver driver = getDriver();
         String[] entity_values;
         do {
             entity_values = getEntityValues();
@@ -77,8 +129,8 @@ public class MarketplaceAppsTest extends BaseTest {
         System.out.println("Password: " + admin_password);
         System.out.println(String.format("https://%s.eteam.work", entity_values[0]));
 
-        context.setAttribute("password", admin_password);
-        context.setAttribute("app_name", entity_values[0]);
+//        context.setAttribute("password", admin_password);
+//        context.setAttribute("app_name", entity_values[0]);
 //        String admin_password = (String) context.getAttribute("password");
 //        String app_name = (String) context.getAttribute("app_name");
         assertInstanceValues(entity_values);
