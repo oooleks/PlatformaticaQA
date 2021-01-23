@@ -10,7 +10,6 @@ import runner.type.Run;
 import runner.type.RunType;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @Run(run = RunType.Multiple)
 public class EntityPlatformFunctionsTest extends BaseTest {
@@ -85,6 +84,11 @@ public class EntityPlatformFunctionsTest extends BaseTest {
         }
     }
 
+    private void resetAccount (WebDriver driver){
+        ProjectUtils.click(driver, driver.findElement(By.id("navbarDropdownProfile")));
+        ProjectUtils.click(driver, driver.findElement(By.xpath("//a[contains(text(), 'Reset')]")));
+    }
+
     @Test
     public void functionCancelTest() {
         WebDriver driver = getDriver();
@@ -93,9 +97,10 @@ public class EntityPlatformFunctionsTest extends BaseTest {
         WebElement constant_table = getWebDriverWait().until(ExpectedConditions.presenceOfElementLocated
                 (By.xpath("//div[contains(@class, 'card-body')]")));
         Assert.assertTrue(constant_table.getText().isEmpty());
+        resetAccount(driver);
     }
 
-    @Test (dependsOnMethods = "functionCancelTest")
+    @Test
     public void functionDraftTest() {
         WebDriver driver = getDriver();
 
@@ -104,12 +109,10 @@ public class EntityPlatformFunctionsTest extends BaseTest {
         assertRecordValues(second_record_values, first_record_values, "draft");
         Assert.assertEquals(driver.findElement(By.xpath("//tr[1]//i")).getAttribute("class"), "fa fa-pencil");
         Assert.assertEquals(driver.findElement(By.xpath("//tr[2]//i")).getAttribute("class"), "fa fa-pencil");
-
-        ProjectUtils.click(driver, driver.findElement(By.id("navbarDropdownProfile")));
-        ProjectUtils.click(driver, driver.findElement(By.xpath("//a[contains(text(), 'Reset')]")));
+        resetAccount(driver);
     }
 
-    @Test (dependsOnMethods = {"functionCancelTest", "functionDraftTest"})
+    @Test (dependsOnMethods = "functionDraftTest")
     public void functionCreateTest() {
         WebDriver driver = getDriver();
 
@@ -118,7 +121,7 @@ public class EntityPlatformFunctionsTest extends BaseTest {
         assertRecordValues(second_record_values, first_record_values, "new");
     }
 
-    @Test (dependsOnMethods = {"functionCancelTest", "functionDraftTest", "functionCreateTest"})
+    @Test (dependsOnMethods = "functionCreateTest")
     public void functionViewTest() {
         WebDriver driver = getDriver();
 
@@ -126,7 +129,7 @@ public class EntityPlatformFunctionsTest extends BaseTest {
         assertRecordValues(view_record_values, first_record_values, "view");
     }
 
-    @Test (dependsOnMethods = {"functionCancelTest", "functionDraftTest", "functionCreateTest", "functionViewTest"})
+    @Test (dependsOnMethods = "functionCreateTest")
     public void functionEditTest() {
         WebDriver driver = getDriver();
 
@@ -134,8 +137,7 @@ public class EntityPlatformFunctionsTest extends BaseTest {
         assertRecordValues(edit_record_values, first_record_values, "edit");
     }
 
-    @Test (dependsOnMethods =
-            {"functionCancelTest", "functionDraftTest", "functionCreateTest", "functionViewTest", "functionEditTest"})
+    @Test (dependsOnMethods = {"functionCreateTest", "functionViewTest", "functionEditTest"})
     public void functionDeleteTest() {
         WebDriver driver = getDriver();
 

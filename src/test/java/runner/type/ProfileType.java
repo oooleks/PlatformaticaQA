@@ -5,6 +5,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import runner.BaseTest;
+import runner.LoggerUtils;
 import runner.ProjectUtils;
 
 import java.io.BufferedReader;
@@ -65,10 +66,14 @@ public enum ProfileType {
             throw new RuntimeException("Username or Password is empty");
         }
 
+        login(driver, this.getUserName(), this.getPassword());
+    }
+
+    public void login(WebDriver driver, String userName, String password) {
         WebElement loginElement = driver.findElement(By.xpath("//input[@name='login_name']"));
-        loginElement.sendKeys(this.getUserName());
+        loginElement.sendKeys(userName);
         WebElement pasElement = driver.findElement(By.xpath("//input[@name='password']"));
-        pasElement.sendKeys(this.getPassword());
+        pasElement.sendKeys(password);
         WebElement button = driver.findElement(By.xpath("//button[text()='Sign in']"));
         button.click();
     }
@@ -88,7 +93,8 @@ public enum ProfileType {
             if (!BaseTest.isRemoteWebDriver()) {
                 InputStream inputStream = ProfileType.class.getClassLoader().getResourceAsStream("local.properties");
                 if (inputStream == null) {
-                    throw new RuntimeException("Copy and paste the local.properties.TEMPLATE file to local.properties");
+                    LoggerUtils.logRed("Copy and paste the local.properties.TEMPLATE file to local.properties");
+                    System.exit(1);
                 }
 
                 properties.load(inputStream);

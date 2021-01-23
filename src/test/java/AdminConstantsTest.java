@@ -61,10 +61,6 @@ public class AdminConstantsTest extends BaseTest {
     public void createApplicationTest() throws InterruptedException {
         driver = getDriver();
 
-        WebElement instance_table = getWebDriverWait().until(ExpectedConditions.presenceOfElementLocated
-                (By.xpath("//div[contains(@class,'card-body')]")));
-        Assert.assertTrue(instance_table.getText().isEmpty());
-
         getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated
                 (By.xpath("//i[contains(text(),'create_new_folder')]"))).click();
         String[] entity_values;
@@ -102,7 +98,7 @@ public class AdminConstantsTest extends BaseTest {
         driver.get(String.format("https://%s.eteam.work", app_name));
 
         goToConstantsList();
-        String company_name_1 = ProjectUtils.createRandomString();
+        String company_name_1 = ProjectUtils.createUUID();
         commandInCMD(driver, String.format("create constant \"Company Name\" = \"%s\"", company_name_1));
         commandInCMD(driver, "create constant \"Company Email\" = \"contact@company.com\"");
         getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated
@@ -113,12 +109,12 @@ public class AdminConstantsTest extends BaseTest {
         Assert.assertEquals(getCompany("Email").getAttribute("value"), "contact@company.com");
     }
 
-    @Test (dependsOnMethods = {"createApplicationTest", "createConstants"})
+    @Test (dependsOnMethods = "createConstants")
     public void editConstant() {
         driver.get(String.format("https://%s.eteam.work", app_name));
 
         goToConstantsList();
-        String company_name_2 = ProjectUtils.createRandomString();
+        String company_name_2 = ProjectUtils.createUUID();
         getCompany("Name").clear();
         getCompany("Name").sendKeys(company_name_2);
         getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated
@@ -127,8 +123,8 @@ public class AdminConstantsTest extends BaseTest {
         Assert.assertEquals(String.valueOf(getCompany("Name").getAttribute("value")), company_name_2);
     }
 
-    @Test (dependsOnMethods = {"createApplicationTest", "createConstants", "editConstant"})
-        public void deleteConstants() {
+    @Test (dependsOnMethods = "editConstant")
+    public void deleteConstants() {
         driver.get(String.format("https://%s.eteam.work", app_name));
 
         goToConstantsList();

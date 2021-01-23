@@ -44,14 +44,14 @@ public class AdminEntityTest extends BaseTest {
         }
         double finalRandom_double = random_double * 0.01;
         return new HashMap<Integer, String>() {{
-            put(1, ProjectUtils.createRandomString());
-            put(2, ProjectUtils.createRandomString());
+            put(1, ProjectUtils.createUUID());
+            put(2, ProjectUtils.createUUID());
             put(3, String.valueOf(getRandomInteger()));
             put(4, String.format("%.2f", finalRandom_double));
         }};
     }
 
-    private final String entity_name = ProjectUtils.createRandomString();
+    private final String entity_name = ProjectUtils.createUUID();
     private final By entity_in_menu = By.xpath(String.format
             ("//p[contains(text(),'%s')]/preceding-sibling::i/parent::a", entity_name));
     private final Map<Integer, String> entity_record = createRecordValues();
@@ -115,10 +115,6 @@ public class AdminEntityTest extends BaseTest {
     public void createApplicationTest() throws InterruptedException {
         driver = getDriver();
 
-        WebElement instance_table = getWebDriverWait().until(ExpectedConditions.presenceOfElementLocated
-                (By.xpath("//div[contains(@class,'card-body')]")));
-        Assert.assertTrue(instance_table.getText().isEmpty());
-
         getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated
                 (By.xpath("//i[contains(text(),'create_new_folder')]"))).click();
         String[] entity_values;
@@ -135,13 +131,13 @@ public class AdminEntityTest extends BaseTest {
         } while (isUnableCreateApp());
 
         String congrats = getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated
-                (By.xpath("//div[@class='card-body ']//h3[1]"))).getText();
+                (By.xpath("//div[contains(@class,'card-body')]//h3[1]"))).getText();
         Assert.assertEquals(congrats, "Congratulations! Your instance was successfully created");
 
         app_name = entity_values[0];
 
         final String admin_password = getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated
-                (By.xpath("//div[@class='card-body ']//h4[2]/b"))).getText();
+                (By.xpath("//div[contains(@class,'card-body')]//h4[2]/b"))).getText();
 
         driver.get(String.format("https://%s.eteam.work", entity_values[0]));
         WebElement login_element = driver.findElement(By.xpath("//input[@name='login_name']"));
@@ -181,7 +177,7 @@ public class AdminEntityTest extends BaseTest {
         }
     }
 
-    @Test (dependsOnMethods = {"createApplicationTest", "createEntityTest"})
+    @Test (dependsOnMethods = "createEntityTest")
     public void createRecordsTest() {
         driver.get(String.format("https://%s.eteam.work", app_name));
 
@@ -203,7 +199,7 @@ public class AdminEntityTest extends BaseTest {
         assertEntityRecords (entity_record);
     }
 
-    @Test (dependsOnMethods = {"createApplicationTest", "createEntityTest", "createRecordsTest"})
+    @Test (dependsOnMethods = "createRecordsTest")
     public void recordActionsTest() {
         driver.get(String.format("https://%s.eteam.work", app_name));
 

@@ -11,22 +11,17 @@ import org.testng.annotations.*;
 import runner.type.ProfileType;
 import runner.type.RunType;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Listeners(TestOrder.class)
 public abstract class  BaseTest {
-    private String screenshotDirectoryName = null;
 
     public static final String HUB_URL = "http://localhost:4444/wd/hub";
 
@@ -127,31 +122,9 @@ public abstract class  BaseTest {
 
     @AfterMethod
     protected void afterMethod(Method method, ITestResult tr) {
-        boolean createdDirectory = false;
-        if (ITestResult.FAILURE == tr.getStatus()) {
-            if (screenshotDirectoryName == null) {
-                createdDirectory = true;
-                String tempPath = System.getProperty("java.io.tmpdir");
-                // on windows last char is '\', on Linux is 'p' so need to add separator
-                if (tempPath.charAt(tempPath.length()-1) != File.separatorChar) {
-                    tempPath += File.separator;
-                }
-                screenshotDirectoryName = tempPath
-                        + (new SimpleDateFormat("YYYY-MM-dd-kk-mm-").format(new Date()))
-                        + UUID.randomUUID().toString();
-            }
-
-            ScreenshotUtils.createScreenshotsDir(screenshotDirectoryName);
-            if (createdDirectory) {
-                LoggerUtils.logYellow("Created directory to save screenshots: " + screenshotDirectoryName);
-            }
-
-            ScreenshotUtils.takeScreenShot(driver, String.format("%s%s%s.%s.png",
-                    screenshotDirectoryName, File.separator, tr.getInstanceName(), tr.getName()));
-        }
 
         if (runType == RunType.Single) {
-//            quitBrowser();
+            quitBrowser();
         }
 
         long executionTime = (tr.getEndMillis() - tr.getStartMillis()) / 1000;
@@ -162,22 +135,7 @@ public abstract class  BaseTest {
     @AfterClass
     protected void afterClass() {
         if (runType == RunType.Multiple) {
-//            quitBrowser();
-        }
-    }
-
-    @AfterSuite
-    protected void afterSuite() {
-        if (remoteWebDriver) {
-            try {
-                if (screenshotDirectoryName != null) {
-                    ScreenshotUtils.uploadScreenshotsDir(screenshotDirectoryName);
-                }
-            } catch (Exception exception) {
-                LoggerUtils.logRed(String.format("unable to upload images directory %s to Google drive \n%s",
-                        screenshotDirectoryName,
-                        DriveUtils.getStackTrace(exception)));
-            }
+            quitBrowser();
         }
     }
 
@@ -191,9 +149,5 @@ public abstract class  BaseTest {
         }
 
         return webDriverWait;
-    }
-
-    protected String getScreenshotDirectoryName() {
-        return screenshotDirectoryName;
     }
 }
