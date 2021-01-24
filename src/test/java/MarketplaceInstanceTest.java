@@ -12,7 +12,7 @@ import runner.type.ProfileType;
 import runner.type.Run;
 import runner.type.RunType;
 
-import java.util.*;
+import java.util.List;
 
 @Profile(profile = ProfileType.MARKETPLACE)
 @Run(run = RunType.Multiple)

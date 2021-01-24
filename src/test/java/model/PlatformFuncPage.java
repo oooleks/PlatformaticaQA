@@ -21,6 +21,6 @@ public class PlatformFuncPage extends BaseTablePage<PlatformFuncPage, PlatformFu
     @Override
     public List<String> getRow(int rowNumber) {
         return getRows().get(rowNumber).findElements(By.tagName("td")).stream()
-                .map(WebElement::getText).collect(Collectors.toList());
+                .map(WebElement::getText).collect(Collectors.toList()).subList(1,4);
     }
 }

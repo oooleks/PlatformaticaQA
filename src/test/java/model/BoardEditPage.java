@@ -6,7 +6,7 @@ import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.ui.Select;
 import runner.ProjectUtils;
 
-public final class BoardEditPage extends BaseEditPage<BoardPage> {
+public final class BoardEditPage extends BaseEditPage<BoardBoardPage> {
 
     @FindBy(id = "string")
     private WebElement dropDownStatus;
@@ -71,7 +71,7 @@ public final class BoardEditPage extends BaseEditPage<BoardPage> {
     }
 
     @Override
-    protected BoardPage createPage(){
-        return new BoardPage(getDriver());
+    protected BoardBoardPage createPage(){
+        return new BoardBoardPage(getDriver());
     }
 }

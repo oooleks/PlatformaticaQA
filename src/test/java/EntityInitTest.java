@@ -1,111 +1,79 @@
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import model.InitEditPage;
+import model.InitPage;
+import model.MainPage;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import runner.BaseTest;
-import runner.ProjectUtils;
 import runner.type.Run;
 import runner.type.RunType;
-import java.util.List;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Run(run = RunType.Multiple)
 public class EntityInitTest extends BaseTest {
 
-    final String userDefault = "User 1 Demo";
-    final String[] defaultValuesArr = {"New String", "New Text", "2", "3.14", "01/01/2020", "31/12/2020 23:59:59", "1", "Two"};
-
-    public void createDefaultInitRecord() {
-        WebDriver driver = getDriver();
-
-        WebElement init = driver.findElement(By.xpath("//p[contains (text(), 'Init')]/parent::a"));
-        ProjectUtils.click(driver, init);
-
-        WebElement createNewFolder = driver.findElement(By.xpath("//i[.='create_new_folder']/ancestor::a"));
-        ProjectUtils.click(driver, createNewFolder);
-
-        WebElement submitBtn = driver.findElement(By.xpath("//button[@id='pa-entity-form-save-btn']"));
-        ProjectUtils.click(driver, submitBtn);
-    }
-
-    public void viewFunctionClick() {
-        WebDriver driver = getDriver();
-        WebElement lastViewBtn;
-        List<WebElement> listOfDropDownViewBtns = driver.findElements(By.xpath("//button[@data-toggle='dropdown']/following-sibling::ul/li/a[.='view']"));
-        if (listOfDropDownViewBtns.size() == 1) {
-            lastViewBtn = listOfDropDownViewBtns.get(0);
-        } else {
-            lastViewBtn = listOfDropDownViewBtns.get(listOfDropDownViewBtns.size() - 1);
-        }
-        ProjectUtils.click(driver, lastViewBtn);
-    }
-
-    public void editFunctionClick() {
-        WebDriver driver = getDriver();
-        WebElement lastEditBtn;
-        List<WebElement> listOfDropDownEditBtns = driver.findElements(By.xpath("//button[@data-toggle='dropdown']/following-sibling::ul/li/a[.='edit']"));
-        if (listOfDropDownEditBtns.size() == 1) {
-            lastEditBtn = listOfDropDownEditBtns.get(0);
-        } else {
-            lastEditBtn = listOfDropDownEditBtns.get(listOfDropDownEditBtns.size() - 1);
-        }
-        ProjectUtils.click(driver, lastEditBtn);
-    }
-
+    private static final String USER_DEFAULT = "User 1 Demo";
+    private static final List<String> DEFAULT_VALUES_TABLE = new ArrayList<>(Arrays.asList("New String", "New Text", "2", "3.14", "01/01/2020", "31/12/2020 23:59:59", "1", "Two"));
+    private static final List<String> DEFAULT_VALUES_VIEW = new ArrayList<>(Arrays.asList("New String", "New Text", "2", "3.14", "01/01/2020", "31/12/2020 23:59:59", "Two"));
+    private static final String[] DEFAULT_VALUES_EDIT = {"New String", "New Text", "2", "3.14", "01/01/2020", "31/12/2020 23:59:59", "Two".toUpperCase()};
 
     @Test
-    public void checkDefaultValuesInViewMode() {
+    public void createDefaultInit() {
 
-        WebDriver driver = getDriver();
-        createDefaultInitRecord();
-        viewFunctionClick();
+        InitPage initPage = new MainPage(getDriver())
+                .clickMenuInit()
+                .clickNewFolder()
+                .clickSaveButton();
 
-        WebElement defaultUser = driver.findElement(By.xpath("//div//following-sibling::label[.='User']//following-sibling::p"));
+        Assert.assertEquals(initPage.getRowCount(), 1);
+        Assert.assertTrue(initPage.getDefaultUser().equals(USER_DEFAULT));
+        Assert.assertTrue(initPage.getRow(0).equals(DEFAULT_VALUES_TABLE));
 
-        List<WebElement> listOfDefaultValues = driver.findElements(By.xpath("//span[@class='pa-view-field']"));
-        Assert.assertEquals(listOfDefaultValues.size(), defaultValuesArr.length);
-
-        for (int i = 0; i < listOfDefaultValues.size(); i++) {
-            Assert.assertEquals(listOfDefaultValues.get(i).getText(), defaultValuesArr[i]);
-        }
-
-        Assert.assertTrue(defaultUser.getText().equals(userDefault));
-        driver.navigate().back();
     }
 
-    @Test(dependsOnMethods = "checkDefaultValuesInViewMode")
+    @Test(dependsOnMethods = {"createDefaultInit"})
+    public void checkDefaultInitInViewMode() {
 
+        Assert.assertEquals(new MainPage(getDriver())
+                .clickMenuInit()
+                .viewRow()
+                .getValues(), DEFAULT_VALUES_VIEW);
+
+    }
+
+    @Test(dependsOnMethods = {"createDefaultInit"})
     public void checkDefaultValuesInEditMode() {
-        WebDriver driver = getDriver();
-        checkDefaultValuesInViewMode();
-        editFunctionClick();
 
-        WebElement stringData = driver.findElement(By.xpath("//input[@id='string']"));
-        Assert.assertEquals(stringData.getAttribute("value"), defaultValuesArr[0]);
+        InitEditPage initEditPage = new MainPage(getDriver())
+                .clickMenuInit()
+                .editRow(0);
 
-        WebElement textData = driver.findElement(By.xpath("//span//textarea[@id='text']"));
-        Assert.assertEquals(textData.getText(), defaultValuesArr[1]);
+        final String[] valuesCheck = {
+                initEditPage.getStringValue(),
+                initEditPage.getTextDataValue(),
+                initEditPage.getIntData(),
+                initEditPage.decimalDataValue(),
+                initEditPage.dateDataValue(),
+                initEditPage.dateTimeDataValue(),
+                initEditPage.listDataCheck(),
+        };
 
-        WebElement intData = driver.findElement(By.xpath("//input[@id='int']"));
-        Assert.assertEquals(intData.getAttribute("value"), defaultValuesArr[2]);
+        Assert.assertEquals(Arrays.toString(valuesCheck), Arrays.toString(DEFAULT_VALUES_EDIT));
+        Assert.assertEquals(initEditPage.userDataText(), USER_DEFAULT.toUpperCase());
+        Assert.assertTrue(initEditPage.switchCheck());
+        Assert.assertEquals(initEditPage.listDataCheck(), DEFAULT_VALUES_EDIT[DEFAULT_VALUES_EDIT.length - 1].toUpperCase());
+    }
 
-        WebElement decimalData = driver.findElement(By.xpath("//input[@id='decimal']"));
-        Assert.assertEquals(decimalData.getAttribute("value"), defaultValuesArr[3]);
 
-        WebElement dateData = driver.findElement(By.xpath("//input[@id='date']"));
-        Assert.assertEquals(dateData.getAttribute("value"), defaultValuesArr[4]);
+    @Test(dependsOnMethods = {"createDefaultInit"})
+    public void deleteRecord() {
 
-        WebElement dateTimeData = driver.findElement(By.xpath("//input[@id='datetime']"));
-        Assert.assertEquals(dateTimeData.getAttribute("value"), defaultValuesArr[5]);
+        InitPage initPage = new MainPage(getDriver())
+                .clickMenuInit()
+                .deleteRow();
 
-        WebElement userData = driver.findElement(By.xpath("//div[@class='filter-option-inner-inner' and .='User 1 Demo']"));
-        Assert.assertEquals(userData.getText(), userDefault.toUpperCase());
-
-        WebElement switchData = driver.findElement(By.xpath("//div[@class='togglebutton']/label/input"));
-        Assert.assertTrue(switchData.isEnabled());
-
-        WebElement listData = driver.findElement(By.xpath("//div[@class='filter-option-inner-inner' and .='Two']"));
-        Assert.assertEquals(listData.getText(), defaultValuesArr[defaultValuesArr.length - 1].toUpperCase());
+        Assert.assertEquals(initPage.getRowCount(), 0);
     }
 }

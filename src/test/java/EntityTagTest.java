@@ -3,12 +3,15 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.testng.Assert;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import runner.BaseTest;
 import runner.ProjectUtils;
 
 import java.util.List;
+import java.util.Objects;
 
 public class EntityTagTest extends BaseTest {
 
@@ -27,10 +30,10 @@ public class EntityTagTest extends BaseTest {
         builder.moveToElement(tag).build().perform();
         tag.click();
 
-        String tagEntityText = createTagEntity(driver);
+        String tagRecordText = createTagEntity(driver);
         String newTagText = createTag(driver);
 
-        tagEntity(driver, tagEntityText).click();
+        tagEntity(driver, tagRecordText).click();
 
         By newTagLocator = By.xpath("//label[contains(text(), '" + newTagText + "')]");
         WebElement newTag = driver.findElement(newTagLocator);
@@ -39,9 +42,72 @@ public class EntityTagTest extends BaseTest {
         ProjectUtils.click(driver, assignButton(driver, builder));
 
         Assert.assertEquals(assignedTag(driver, newTagText).size(), 1);
-        tagEntity(driver, tagEntityText).click();
+        tagEntity(driver, tagRecordText).click();
         ProjectUtils.click(driver, assignButton(driver, builder));
         Assert.assertEquals(assignedTag(driver, newTagText).size(), 0);
+    }
+
+    @Ignore
+    @Test
+    public void viewTest() throws InterruptedException {
+
+        WebDriver driver = getDriver();
+
+        Actions builder = new Actions(driver);
+        sideBar(driver, builder);
+        WebElement tag = driver.findElement(By.xpath("//li/a/p[contains(text(), 'Tag')]"));
+        builder.moveToElement(tag).build().perform();
+        tag.click();
+
+        String tagRecordText = createTagEntity(driver);
+        String newTagText = createTag(driver);
+
+        tagEntity(driver, tagRecordText).click();
+
+        By newTagLocator = By.xpath("//label[contains(text(), '" + newTagText + "')]");
+        WebElement newTag = driver.findElement(newTagLocator);
+        builder.moveToElement(newTag).perform();
+        newTag.click();
+        ProjectUtils.click(driver, assignButton(driver, builder));
+        By blueTagLocator = By.xpath("//table[@id='pa-all-entities-table']//div[contains(text(), '"+ tagRecordText +"')]/../../../td[2]/span");
+        WebElement blueTag = driver.findElement(blueTagLocator);
+        Assert.assertEquals(blueTag.getText(), newTagText);
+
+        // Check tag record on dashboard
+        sideBar(driver, builder);
+        WebElement dashboard = driver.findElement(By.xpath("//li/a/p[contains(text(), 'Dashboard')]"));
+        builder.moveToElement(dashboard).build().perform();
+        //dashboard.click();
+        ProjectUtils.click(driver, dashboard);
+
+        By selectTagButtonLocator = By.xpath("//button[@class='dropdown-toggle btn btn-link']");
+        WebElement selectTagButton = driver.findElement(selectTagButtonLocator);
+        ProjectUtils.click(driver, selectTagButton);
+        String currentText = null;
+        WebElement lastElement;
+        By lastItemLocator = By.xpath("//ul[@class='dropdown-menu inner show']/li[last()]/a");
+        while (!Objects.equals(currentText, (lastElement = getDriver().findElement(lastItemLocator)).getText())) {
+            ProjectUtils.scroll(getDriver(), lastElement);
+            currentText = lastElement.getText();
+            getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated(lastItemLocator));
+        }
+        ProjectUtils.click(driver, lastElement);
+
+        By goButtonLocator = By.xpath("//button[@class='btn btn-warning pa-go-btn']");
+        WebElement goButton = driver.findElement(goButtonLocator);
+        ProjectUtils.click(driver, goButton);
+
+        By tagRecordsLocator = By.xpath("//table[@id='pa-all-entities-table']//tr/td[6]//div");
+        WebElement tagRecords = driver.findElement(tagRecordsLocator);
+        ProjectUtils.click(driver, tagRecords);
+        WebElement tagString = driver.findElement(By.xpath("//label[text() = 'String']/following::span[1]"));
+        Assert.assertEquals(tagString.getText(), tagRecordText);
+    }
+
+    private static WebElement sideBar(WebDriver driver, Actions builder) {
+        WebElement sidebar = driver.findElement(By.xpath("//div[contains(@class, 'sidebar-wrapper')]"));
+        builder.moveToElement(sidebar).perform();
+        return sidebar;
     }
 
     private static WebElement assignButton(WebDriver driver, Actions builder) {
@@ -87,8 +153,8 @@ public class EntityTagTest extends BaseTest {
         return randomTag;
     }
 
-    private static WebElement tagEntity(WebDriver driver, String tagEntityText) {
-        By tagEntityLocator = By.xpath("//tr//td/a/div[contains(text(), '" + tagEntityText + "')]/../../../td[1]/div");
+    private static WebElement tagEntity(WebDriver driver, String tagRecordText) {
+        By tagEntityLocator = By.xpath("//tr//td/a/div[contains(text(), '" + tagRecordText + "')]/../../../td[1]/div");
         return driver.findElement(tagEntityLocator);
     }
 }

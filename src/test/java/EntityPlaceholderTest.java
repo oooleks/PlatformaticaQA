@@ -9,6 +9,7 @@ import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import runner.BaseTest;
 import runner.ProjectUtils;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -65,7 +66,7 @@ public class EntityPlaceholderTest extends BaseTest {
     public void verifyDecimal() throws InterruptedException {
 
         final String newDecimal = "37.0";
-        String[] array = {null, TITLE, COMMENTS, INT_NUMBER, newDecimal, null, null, null, null,userSelected,null};
+        String[] array = {null, TITLE, COMMENTS, INT_NUMBER, newDecimal, null, null, null, null, userSelected, null};
         WebDriver driver = getDriver();
 
         ProjectUtils.click(driver, driver.findElement(placeholderButtonXpath));
@@ -181,46 +182,99 @@ public class EntityPlaceholderTest extends BaseTest {
         WebElement menuDelete = driver.findElement(By.xpath("//a[contains(text(),'delete')]"));
         ProjectUtils.click(driver, menuDelete);
     }
+
     @Test
     public void deleteRecord() {
 
-        final String id = UUID.randomUUID().toString();
-
         WebDriver driver = getDriver();
 
-        WebElement tab = driver.findElement(By.xpath("//p[text()=' Placeholder ']"));
-        ProjectUtils.click(driver,tab);
+        ProjectUtils.click(driver, driver.findElement(placeholderButtonXpath));
+        driver.findElement(createNewFolderXpath).click();
+        driver.findElement(By.xpath("//input[@name='entity_form_data[string]']")).sendKeys(TITLE);
+        ProjectUtils.click(driver, driver.findElement(saveButtonXpath));
 
-        WebElement createNewFolder = driver.findElement(By.xpath("//i[contains(text(),'create_new_folder')]"));
-        createNewFolder.click();
+        driver.findElement(By.xpath("(//div[1]/div/ul/li[1]/a/i)[3]")).click();
+        Assert.assertEquals(driver.findElement(By.xpath("(//td/a/div)[1]")).getText(), TITLE);
 
-        WebElement titleElement = driver.findElement(By.xpath("//input[@name='entity_form_data[string]']"));
-        titleElement.sendKeys(id);
-
-        WebElement saveBtn = driver.findElement(By.id("pa-entity-form-save-btn"));
-        ProjectUtils.click(driver,saveBtn);
-
-        WebElement list = driver.findElement(By.xpath("(//div[1]/div/ul/li[1]/a/i)[3]"));
-        list.click();
-
-        WebElement firstColumn = driver.findElement(By.xpath("(//td/a/div)[1]"));
-        Assert.assertEquals(firstColumn.getText(),id);
-
-        WebElement menuAction = driver.findElement(By.xpath("//i[text() = 'menu']/.."));
-        menuAction.click();
-
-        WebElement deleteButton = driver.findElement(By.xpath("//a[contains(text(),'delete')]"));
-        ProjectUtils.click(driver,deleteButton);
+        driver.findElement(By.xpath("//i[text() = 'menu']/..")).click();
+        ProjectUtils.click(driver, driver.findElement(By.xpath("//a[contains(text(),'delete')]")));
 
         new WebDriverWait(driver, 3).until(ExpectedConditions.
-                invisibilityOfElementLocated(By.xpath("//div[contains(text(),'" + id +"')]")));
+                invisibilityOfElementLocated(By.xpath("//div[contains(text(),'" + TITLE + "')]")));
         List<WebElement> listOfElements = driver.findElements(By.xpath("//tbody/tr/.."));
         Assert.assertEquals(listOfElements.size(), 0);
 
-        WebElement recycleButton = driver.findElement(By.xpath("//i[contains(text(),'delete_outline')]/.."));//
-        recycleButton.click();
-
-        WebElement deletedField = driver.findElement(By.xpath("//b[contains(text(),'" + id + "')]"));
-        Assert.assertEquals(deletedField.getText(), id);
+        driver.findElement(By.xpath("//i[contains(text(),'delete_outline')]/..")).click();
+        Assert.assertEquals(driver.findElement(By.xpath("//b[contains(text(),'" + TITLE + "')]")).getText(), TITLE);
     }
+
+    @Test
+    public void editRecordTest() throws InterruptedException {
+
+        final String TITLE = UUID.randomUUID().toString();
+        final String NEW_TITLE = UUID.randomUUID().toString();
+        final String COMMENTS_EDIT = "Text new Added Edit";
+        final String INT_EDIT = "1234";
+        final String DEC_EDIT = "33.4";
+        final String userSelected = "User 1 Demo";
+        final String[] array = {null, NEW_TITLE, COMMENTS_EDIT, INT_EDIT, DEC_EDIT, null, null, null, null,userSelected,null};
+
+        WebDriver driver = getDriver();
+        WebDriverWait wait = getWebDriverWait();
+
+        driver.findElement(By.xpath("//p[contains(text(),'Placeholder')]")).click();
+        driver.findElement(By.xpath("//i[contains(text(),'create_new_folder')]")).click();
+        driver.findElement(By.xpath("//input[@name='entity_form_data[string]']")).sendKeys(TITLE);
+        driver.findElement(By.xpath("//textarea[@name='entity_form_data[text]']")).sendKeys("test");
+        driver.findElement(By.xpath("//input[@name='entity_form_data[int]']")).sendKeys(String.valueOf(55));
+        driver.findElement(By.xpath("//input[@name='entity_form_data[decimal]']")).sendKeys(String.valueOf(0.25));
+        driver.findElement(By.id("date")).click();
+        WebElement saveBtn = driver.findElement(By.id("pa-entity-form-save-btn"));
+        ProjectUtils.click(driver,saveBtn);
+
+        WebElement inputField = driver.findElement(By.xpath("//span/input"));
+        wait.until(ExpectedConditions.elementToBeClickable(inputField));
+        ProjectUtils.sendKeys(inputField, TITLE);
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("(//div/button[contains(@type, 'button')])[3]")));
+        getWebDriverWait().until(ExpectedConditions.visibilityOfElementLocated(By.xpath("(//td/a/div)[1]")));
+        WebElement humburgerMenu = driver.findElement(By.xpath("(//div/button[contains(@type, 'button')])[3]"));
+        wait.until(ExpectedConditions.elementToBeClickable(humburgerMenu));
+        humburgerMenu.click();
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//li//a[contains(@href, \"edit\")]")));
+        WebElement editButton = driver.findElement(By.xpath("//li//a[contains(@href, \"edit\")]"));
+        wait.until(ExpectedConditions.elementToBeClickable(editButton));
+        editButton.click();
+        WebElement fieldString = driver.findElement(By.xpath("(//span/input)[1]"));
+        wait.until(ExpectedConditions.elementToBeClickable(fieldString));
+        fieldString.clear();
+        ProjectUtils.sendKeys(fieldString, NEW_TITLE);
+        WebElement textString = driver.findElement(By.xpath("//span/textarea"));
+        textString.clear();
+        ProjectUtils.sendKeys(textString, COMMENTS_EDIT);
+        WebElement fieldInt = driver.findElement(By.xpath("//input[@name='entity_form_data[int]']"));
+        fieldInt.clear();
+        ProjectUtils.sendKeys(fieldInt, INT_EDIT);
+        WebElement fieldDecimal2 = driver.findElement(By.xpath("//input[@name='entity_form_data[decimal]']"));
+        fieldDecimal2.clear();
+        ProjectUtils.sendKeys(fieldDecimal2, DEC_EDIT);
+        WebElement userSelection = driver.findElement(By.xpath("//div[contains(text(),'Demo')]"));
+        ProjectUtils.click(driver, userSelection);
+        WebElement saveBtn2 = driver.findElement(By.xpath("//div//button[@id = \"pa-entity-form-save-btn\"]"));
+        ProjectUtils.click(driver,saveBtn2);
+
+        WebElement inputField2 = driver.findElement(By.xpath("//span/input"));
+        ProjectUtils.sendKeys(inputField2, NEW_TITLE);
+        List<WebElement> listOfRecords = driver.findElements(By.xpath("//tbody/tr"));
+        List<WebElement> listOfValues = listOfRecords.get(0).findElements(By.xpath("//td"));
+        Assert.assertEquals(listOfValues.size(), array.length);
+        for (int i = 0; i < array.length; i++) {
+            if (array[i] != null) {
+                Assert.assertEquals(listOfValues.get(i).getText(), array[i]);
+            }
+        }
+
+    }
+
+
+
 }
